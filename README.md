@@ -295,12 +295,6 @@ git push origin feature/AmazingFeature
 
 ---
 
-## 📄 License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
----
-
 ## 👥 Team
 
 <div align="center">
