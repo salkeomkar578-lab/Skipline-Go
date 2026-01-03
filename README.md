@@ -294,7 +294,7 @@ git push origin feature/AmazingFeature
 
 ---
 
-## 👥 Team
+##  Team
 
 <div align="center">
 
