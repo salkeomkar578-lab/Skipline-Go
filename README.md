@@ -19,7 +19,6 @@
 <br/>
 
 <img src="https://img.shields.io/badge/Status-Production_Ready-success?style=flat-square" alt="Status"/>
-<img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License"/>
 <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=flat-square" alt="PRs Welcome"/>
 
 </div>
