@@ -1903,7 +1903,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                 }} 
                 size={180}
                 isVerified={false}
-                showAnimation={true}
+                autoGenerate={true}
               />
             )}
             
@@ -2309,8 +2309,8 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   preorderMall: viewingPreorder.preorderMall || viewingPreorder.branch || ''
                 } as Transaction} 
                 size={200}
-                showAnimation={false}
                 isVerified={false}
+                autoGenerate={false}
               />
             </div>
           )}
