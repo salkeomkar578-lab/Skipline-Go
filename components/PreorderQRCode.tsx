@@ -1,23 +1,30 @@
 /**
  * Preorder QR Code Component
- * Simple QR code for preorder pickup verification
+ * QR code with 5-minute validity timer and regeneration
  * Uses base64 encoded JSON (NOT JWT) for transparency and easy scanning
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Transaction } from '../types';
 import { CURRENCY_SYMBOL } from '../constants';
-import { Loader2, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle, RefreshCw, Clock, AlertCircle, ShieldCheck } from 'lucide-react';
 
 interface PreorderQRCodeProps {
   transaction: Transaction;
   size?: number;
   showAnimation?: boolean;
+  isVerified?: boolean;
+  onRegenerate?: () => void;
+  expiresAt?: number;
 }
 
-// Generate simple preorder QR data (NOT JWT - just base64 encoded JSON)
-export const generatePreorderQRData = (transaction: Transaction): string => {
+// QR validity duration in milliseconds (5 minutes)
+const QR_VALIDITY_MS = 5 * 60 * 1000;
+
+// Generate simple preorder QR data with timestamp for expiry
+export const generatePreorderQRData = (transaction: Transaction, generatedAt?: number): string => {
+  const timestamp = generatedAt || Date.now();
   const qrPayload = {
     type: 'SKIPLINE_PREORDER',
     version: '1.0',
@@ -27,8 +34,10 @@ export const generatePreorderQRData = (transaction: Transaction): string => {
     itemCount: transaction.items?.length || 0,
     mall: transaction.preorderMall || transaction.branch || '',
     timestamp: transaction.timestamp,
+    generatedAt: timestamp,
+    expiresAt: timestamp + QR_VALIDITY_MS,
     // Include a simple checksum for basic validation
-    checksum: generateChecksum(transaction.id, transaction.total)
+    checksum: generateChecksum(transaction.id, transaction.total, timestamp)
   };
   
   // Simple base64 encoding for readability and easy parsing
@@ -40,8 +49,8 @@ export const generatePreorderQRData = (transaction: Transaction): string => {
 };
 
 // Simple checksum for basic validation
-const generateChecksum = (txId: string, total: number): string => {
-  const str = `${txId}-${total.toFixed(2)}`;
+const generateChecksum = (txId: string, total: number, timestamp?: number): string => {
+  const str = `${txId}-${total.toFixed(2)}-${timestamp || 0}`;
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
@@ -54,6 +63,7 @@ const generateChecksum = (txId: string, total: number): string => {
 // Decode and verify preorder QR data
 export const decodePreorderQR = (qrData: string): {
   valid: boolean;
+  expired?: boolean;
   data?: {
     type: string;
     version: string;
@@ -63,6 +73,8 @@ export const decodePreorderQR = (qrData: string): {
     itemCount: number;
     mall: string;
     timestamp: number;
+    generatedAt?: number;
+    expiresAt?: number;
     checksum: string;
   };
   error?: string;
@@ -84,9 +96,14 @@ export const decodePreorderQR = (qrData: string): {
     }
     
     // Verify checksum
-    const expectedChecksum = generateChecksum(data.txId, data.total);
+    const expectedChecksum = generateChecksum(data.txId, data.total, data.generatedAt);
     if (data.checksum !== expectedChecksum) {
       return { valid: false, error: 'Checksum mismatch - QR may be tampered' };
+    }
+    
+    // Check if QR has expired (only if expiresAt is present)
+    if (data.expiresAt && Date.now() > data.expiresAt) {
+      return { valid: false, expired: true, data, error: 'QR code has expired. Ask customer to regenerate.' };
     }
     
     return { valid: true, data };
@@ -96,13 +113,53 @@ export const decodePreorderQR = (qrData: string): {
   }
 };
 
-export const PreorderQRCode: React.FC<PreorderQRCodeProps> = ({ transaction, size = 200, showAnimation = true }) => {
+export const PreorderQRCode: React.FC<PreorderQRCodeProps> = ({ 
+  transaction, 
+  size = 200, 
+  showAnimation = true,
+  isVerified = false,
+  onRegenerate,
+  expiresAt: propExpiresAt
+}) => {
   const [animationPhase, setAnimationPhase] = useState<'cube' | 'building' | 'ready' | 'done'>(showAnimation ? 'cube' : 'done');
-  const qrData = generatePreorderQRData(transaction);
+  const [qrGeneratedAt, setQrGeneratedAt] = useState(Date.now());
+  const [timeRemaining, setTimeRemaining] = useState(QR_VALIDITY_MS);
+  const [isExpired, setIsExpired] = useState(false);
+  
+  // Generate QR data with current timestamp
+  const qrData = generatePreorderQRData(transaction, qrGeneratedAt);
+  const expiresAt = propExpiresAt || (qrGeneratedAt + QR_VALIDITY_MS);
+  
+  // Countdown timer for QR validity
+  useEffect(() => {
+    if (isVerified) return; // Stop timer if verified
+    
+    const interval = setInterval(() => {
+      const remaining = expiresAt - Date.now();
+      if (remaining <= 0) {
+        setTimeRemaining(0);
+        setIsExpired(true);
+      } else {
+        setTimeRemaining(remaining);
+        setIsExpired(false);
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [expiresAt, isVerified]);
+  
+  // Regenerate QR code
+  const handleRegenerate = useCallback(() => {
+    setAnimationPhase('cube');
+    setQrGeneratedAt(Date.now());
+    setIsExpired(false);
+    setTimeRemaining(QR_VALIDITY_MS);
+    onRegenerate?.();
+  }, [onRegenerate]);
   
   // 3D QR Generation Animation Sequence
   useEffect(() => {
-    if (showAnimation) {
+    if (showAnimation && animationPhase === 'cube') {
       // Phase 1: 3D Cube spinning (1.5s)
       const timer1 = setTimeout(() => setAnimationPhase('building'), 1500);
       // Phase 2: QR Building animation (1s)
@@ -116,7 +173,7 @@ export const PreorderQRCode: React.FC<PreorderQRCodeProps> = ({ transaction, siz
         clearTimeout(timer3);
       };
     }
-  }, [showAnimation]);
+  }, [showAnimation, animationPhase]);
   
   return (
     <div className="flex flex-col items-center">
@@ -187,25 +244,83 @@ export const PreorderQRCode: React.FC<PreorderQRCodeProps> = ({ transaction, siz
           </div>
         )}
         
-        {/* Final: QR Code Revealed */}
+        {/* Final: QR Code Revealed - with Verified/Expired overlay */}
         {animationPhase === 'done' && (
-          <div className={`bg-white p-4 rounded-2xl shadow-xl ${showAnimation ? 'qr-reveal-3d' : ''}`}>
-            <QRCodeSVG
-              value={qrData}
-              size={size}
-              level="M"
-              includeMargin={true}
-              bgColor="#ffffff"
-              fgColor="#1e1b4b"
-            />
+          <div className="relative">
+            <div className={`bg-white p-4 rounded-2xl shadow-xl ${showAnimation ? 'qr-reveal-3d' : ''} ${isExpired && !isVerified ? 'opacity-30' : ''} ${isVerified ? 'ring-4 ring-emerald-500' : ''}`}>
+              <QRCodeSVG
+                value={qrData}
+                size={size}
+                level="M"
+                includeMargin={true}
+                bgColor="#ffffff"
+                fgColor="#1e1b4b"
+              />
+            </div>
+            
+            {/* Verified Badge Overlay */}
+            {isVerified && (
+              <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/90 rounded-2xl">
+                <div className="text-center">
+                  <ShieldCheck className="w-16 h-16 text-white mx-auto mb-2" />
+                  <p className="text-white font-black text-xl">VERIFIED</p>
+                  <p className="text-white/80 text-sm">Collection Complete</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Expired Overlay */}
+            {isExpired && !isVerified && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 rounded-2xl">
+                <div className="text-center">
+                  <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-2" />
+                  <p className="text-white font-bold">QR Expired</p>
+                  <p className="text-slate-400 text-xs mb-3">Tap below to regenerate</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
       
+      {/* Timer Display - Only show if not verified */}
+      {animationPhase === 'done' && !isVerified && (
+        <div className={`mt-3 flex items-center justify-center gap-2 px-4 py-2 rounded-xl ${
+          isExpired ? 'bg-red-100' : timeRemaining < 60000 ? 'bg-amber-100' : 'bg-emerald-100'
+        }`}>
+          <Clock className={`w-4 h-4 ${isExpired ? 'text-red-500' : timeRemaining < 60000 ? 'text-amber-600' : 'text-emerald-600'}`} />
+          <span className={`font-bold text-sm ${isExpired ? 'text-red-600' : timeRemaining < 60000 ? 'text-amber-700' : 'text-emerald-700'}`}>
+            {isExpired ? 'QR Expired' : `Valid for ${Math.floor(timeRemaining / 60000)}:${String(Math.floor((timeRemaining % 60000) / 1000)).padStart(2, '0')}`}
+          </span>
+        </div>
+      )}
+      
+      {/* Verified Status Badge */}
+      {isVerified && (
+        <div className="mt-3 bg-emerald-100 border border-emerald-300 rounded-xl px-4 py-3 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+            <span className="font-bold text-emerald-700">Verification Complete</span>
+          </div>
+          <p className="text-emerald-600 text-xs mt-1">Your order has been collected</p>
+        </div>
+      )}
+      
+      {/* Regenerate Button - Only show if expired and not verified */}
+      {isExpired && !isVerified && (
+        <button
+          onClick={handleRegenerate}
+          className="mt-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform w-full"
+        >
+          <RefreshCw className="w-5 h-5" />
+          Regenerate QR Code
+        </button>
+      )}
+      
       {/* Pickup Code Display */}
       <div className="mt-4 text-center">
         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Pickup Code</p>
-        <p className="text-3xl font-black text-purple-700 tracking-[0.15em] font-mono">
+        <p className={`text-3xl font-black tracking-[0.15em] font-mono ${isVerified ? 'text-emerald-600 line-through' : 'text-purple-700'}`}>
           {transaction.preorderPickupCode || ''}
         </p>
       </div>
@@ -220,9 +335,11 @@ export const PreorderQRCode: React.FC<PreorderQRCodeProps> = ({ transaction, siz
       </div>
       
       {/* Scan Instructions */}
-      <p className="mt-3 text-xs text-slate-400 text-center">
-        Staff can scan this QR or enter the pickup code
-      </p>
+      {!isVerified && (
+        <p className="mt-3 text-xs text-slate-400 text-center">
+          Staff can scan this QR or enter the pickup code
+        </p>
+      )}
     </div>
   );
 };

@@ -5,6 +5,7 @@
         "/^cd \"c:\\\\Users\\\\predator\\\\Downloads\\\\skipline-go2\\.0\" ; git add -A ; git commit -m \"UI improvements: language selector, chatbot position, QR animation, saved preorders\n\n- LanguageSelector: Auto-detect available space and open upward/downward accordingly\n- AIChatbot: Smaller icon \\(14x14\\), removed bounce animation, better mobile positioning\n- PreorderQRCode: Added generation animation \\(loading spinner -> success -> QR reveal\\)\n- Added VIEW_PREORDER_QR view: Customers can access saved preorder QR codes from order history\n- History view: Added 'View QR Code' button for pending preorders\n- CSS: Added fadeInScale animation for QR code reveal\n- Fixed overlap issues on mobile devices\"$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "git add": true
     }
 }

@@ -763,38 +763,6 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               </div>
             </button>
 
-            {/* Pending Pickups - Show saved preorder codes */}
-            {(() => {
-              const pendingPickups = transactionHistory.filter(tx => 
-                tx.isPreorder && tx.status !== 'PREORDER_COLLECTED'
-              );
-              if (pendingPickups.length === 0) return null;
-              return (
-                <button
-                  onClick={() => setViewState('HISTORY')}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 p-5 rounded-2xl shadow-xl text-left active:scale-[0.98] transition-transform group relative overflow-hidden"
-                >
-                  {/* Animated background */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 animate-shimmer" />
-                  <div className="flex items-center gap-4 relative z-10">
-                    <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-active:scale-90 transition-transform">
-                      <Package className="w-7 h-7 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-xl font-black text-white">Pending Pickups</h2>
-                        <span className="bg-white text-amber-600 text-xs font-black px-2 py-0.5 rounded-full">
-                          {pendingPickups.length}
-                        </span>
-                      </div>
-                      <p className="text-white/70 text-sm mt-0.5">View your QR codes for pickup</p>
-                    </div>
-                    <ChevronRight className="w-6 h-6 text-white/70" />
-                  </div>
-                </button>
-              );
-            })()}
-
             {/* Shop In-Store */}
             <button
               onClick={() => setViewState('BRANCH_SELECT')}
@@ -1427,6 +1395,38 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
         </div>
         
         <div className="max-w-lg mx-auto p-4">
+          {/* Pending Pickups Banner - Show if customer has pending preorders */}
+          {(() => {
+            const pendingPickups = transactionHistory.filter(tx => 
+              tx.isPreorder && tx.status !== 'PREORDER_COLLECTED'
+            );
+            if (pendingPickups.length === 0) return null;
+            return (
+              <button
+                onClick={() => { setHistoryTab('ONLINE'); setViewState('HISTORY'); }}
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 p-4 rounded-2xl shadow-xl mb-6 text-left active:scale-[0.98] transition-transform relative overflow-hidden"
+              >
+                {/* Animated background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 animate-shimmer" />
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Package className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-black text-white">Pending Pickups</h2>
+                      <span className="bg-white text-amber-600 text-xs font-black px-2 py-0.5 rounded-full">
+                        {pendingPickups.length}
+                      </span>
+                    </div>
+                    <p className="text-white/80 text-sm">View your QR codes for collection</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/70" />
+                </div>
+              </button>
+            );
+          })()}
+          
           {/* Header */}
           <div className="text-center mb-8 mt-4">
             <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
@@ -1830,11 +1830,11 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </div>
             <div className="flex-1">
               <p className="text-amber-900 font-bold text-sm">Waiting for Pickup</p>
-              <p className="text-amber-800 text-xs">Screen will update when staff verifies your code</p>
+              <p className="text-amber-800 text-xs">QR valid for 5 mins - regenerate if expired</p>
             </div>
           </div>
           
-          {/* PREORDER QR CODE - Main Focus */}
+          {/* PREORDER QR CODE - Main Focus with Timer */}
           <div className="bg-white rounded-3xl p-6 shadow-2xl mb-4">
             {preorderTransaction && (
               <PreorderQRCode 
@@ -1844,6 +1844,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   preorderMall: preorderTransaction.mall
                 }} 
                 size={180}
+                isVerified={false}
               />
             )}
             
@@ -2208,7 +2209,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               ? 'bg-emerald-500/20 text-emerald-300' 
               : 'bg-amber-500/20 text-amber-300'
           }`}>
-            {viewingPreorder.status === 'PREORDER_COLLECTED' ? '✅ Collected' : '⏳ Awaiting Pickup'}
+            {viewingPreorder.status === 'PREORDER_COLLECTED' ? '✅ Verification Done - Collected' : '⏳ Awaiting Pickup'}
           </div>
           
           {/* QR Code Card */}
@@ -2221,6 +2222,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               } as Transaction} 
               size={200}
               showAnimation={false}
+              isVerified={viewingPreorder.status === 'PREORDER_COLLECTED'}
             />
           </div>
           
