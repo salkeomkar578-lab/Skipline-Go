@@ -1284,8 +1284,13 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
                 <div className="space-y-2">
                   <button
                     onClick={async () => {
-                      // Mark as collected
+                      // Mark as collected in Firebase
                       await updateFirebaseTransactionStatus(pendingCollectTx.id, 'PREORDER_COLLECTED', 'STAFF-001');
+                      
+                      // Also update local storage so customer app sees it immediately
+                      updateLocalTransactionStatus(pendingCollectTx.id, 'PREORDER_COLLECTED', 'STAFF-001');
+                      
+                      // Send notification to customer (works across devices via localStorage polling)
                       await sendVerificationNotification(pendingCollectTx.id, 'preorder_collected', 'Order collected successfully!');
                       console.log('📢 Preorder pickup notification sent to customer');
                       

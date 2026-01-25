@@ -562,6 +562,46 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     
     return () => unsubscribe();
   }, [viewingPreorder, viewState]);
+  
+  // Global listener: Check for verification updates on ALL pending preorders
+  // This runs continuously to sync status from localStorage (updated by staff app)
+  useEffect(() => {
+    // Poll localStorage for updated transaction status
+    const checkForUpdates = () => {
+      const allTx = getAllTransactions();
+      
+      // Check if any pending preorder in our history has been collected
+      let hasUpdates = false;
+      const updatedHistory = transactionHistory.map(tx => {
+        if (tx.isPreorder && tx.status !== 'PREORDER_COLLECTED') {
+          const latestTx = allTx.find(t => t.id === tx.id);
+          if (latestTx && latestTx.status === 'PREORDER_COLLECTED') {
+            console.log('🔄 Transaction status updated from localStorage:', tx.id);
+            hasUpdates = true;
+            return { ...tx, status: 'PREORDER_COLLECTED' };
+          }
+        }
+        return tx;
+      });
+      
+      if (hasUpdates) {
+        setTransactionHistory(updatedHistory);
+        
+        // Also update viewingPreorder if it was just verified
+        if (viewingPreorder && viewingPreorder.status !== 'PREORDER_COLLECTED') {
+          const latestViewing = allTx.find(t => t.id === viewingPreorder.id);
+          if (latestViewing && latestViewing.status === 'PREORDER_COLLECTED') {
+            setViewingPreorder({ ...viewingPreorder, status: 'PREORDER_COLLECTED' });
+          }
+        }
+      }
+    };
+    
+    // Check every 1 second for updates
+    const interval = setInterval(checkForUpdates, 1000);
+    
+    return () => clearInterval(interval);
+  }, [transactionHistory, viewingPreorder]);
 
   // Countdown timer when pickup is confirmed
   useEffect(() => {
@@ -2211,13 +2251,26 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   {tx.isPreorder && tx.status !== 'PREORDER_COLLECTED' && (
                     <button
                       onClick={() => {
-                        setViewingPreorder(tx);
+                        // Check latest status from localStorage before showing
+                        const latestTx = getTransactionById(tx.id);
+                        const currentTx = latestTx || tx;
+                        setViewingPreorder(currentTx);
                         setViewState('VIEW_PREORDER_QR');
                       }}
                       className="w-full mt-2 bg-purple-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-purple-700"
                     >
                       📱 View QR Code
                     </button>
+                  )}
+                  
+                  {/* Show Verified badge for collected preorders */}
+                  {tx.isPreorder && tx.status === 'PREORDER_COLLECTED' && (
+                    <div className="mt-2 bg-emerald-100 border border-emerald-300 rounded-xl p-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                        <span className="font-bold text-emerald-700">✅ Verified & Collected</span>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}
