@@ -18,6 +18,7 @@ import {
 import { jsPDF } from 'jspdf';
 import { CameraScanner } from '../components/CameraScanner';
 import { ExitQRCode } from '../components/ExitQRCode';
+import { PreorderQRCode } from '../components/PreorderQRCode';
 import { AIChatbot } from '../components/AIChatbot';
 import { CartItem, Product, Transaction, TheftAnalysis } from '../types';
 import { MOCK_PRODUCTS, CURRENCY_SYMBOL, TAX_RATE } from '../constants';
@@ -1798,17 +1799,21 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </div>
           </div>
           
-          {/* PICKUP CODE - Main Focus */}
+          {/* PREORDER QR CODE - Main Focus */}
           <div className="bg-white rounded-3xl p-6 shadow-2xl mb-4">
-            <div className="text-center">
-              <p className="text-slate-500 text-xs uppercase tracking-wider mb-2">YOUR PICKUP CODE</p>
-              <div className="bg-gradient-to-r from-purple-100 to-indigo-100 rounded-2xl p-4 mb-4">
-                <p className="text-5xl font-black text-purple-700 tracking-[0.2em] font-mono">
-                  {preorderTransaction?.pickupCode}
-                </p>
-              </div>
-              
-              {/* Copy Button */}
+            {preorderTransaction && (
+              <PreorderQRCode 
+                transaction={{
+                  ...preorderTransaction,
+                  preorderPickupCode: preorderTransaction.pickupCode,
+                  preorderMall: preorderTransaction.mall
+                }} 
+                size={180}
+              />
+            )}
+            
+            {/* Copy Button */}
+            <div className="mt-4 flex justify-center">
               <button
                 onClick={() => {
                   const code = preorderTransaction?.pickupCode || '';
@@ -1826,7 +1831,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                     setTimeout(() => setCopySuccess(false), 2000);
                   });
                 }}
-                className={`px-8 py-3 rounded-xl font-bold text-sm flex items-center gap-2 mx-auto transition-all ${
+                className={`px-8 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${
                   copySuccess 
                     ? 'bg-emerald-500 text-white' 
                     : 'bg-purple-100 text-purple-700 hover:bg-purple-200 active:scale-95'
@@ -1858,13 +1863,13 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
           </div>
           
           {/* Important Notice Banner */}
-          <div className="bg-amber-400 rounded-2xl p-4 mb-4 flex items-start gap-3">
-            <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="bg-purple-500/90 rounded-2xl p-4 mb-4 flex items-start gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
               <Package className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-amber-900 font-bold text-sm">Just show this code!</p>
-              <p className="text-amber-800 text-xs mt-1">Visit the store, tell staff your pickup code, and collect your items.</p>
+              <p className="text-white font-bold text-sm">Show QR or tell code!</p>
+              <p className="text-white/80 text-xs mt-1">Staff can scan your QR code or you can tell them your pickup code.</p>
             </div>
           </div>
           

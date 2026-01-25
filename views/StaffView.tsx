@@ -21,6 +21,7 @@ import {
 import { CameraScanner } from '../components/CameraScanner';
 import { Transaction } from '../types';
 import { verifyExitToken } from '../components/ExitQRCode';
+import { decodePreorderQR } from '../components/PreorderQRCode';
 import { 
   getTransactionById, 
   getAllTransactions,
@@ -66,6 +67,7 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
     status: 'IDLE' | 'VERIFYING' | 'FOUND' | 'NOT_FOUND';
     transaction?: Transaction;
   }>({ status: 'IDLE' });
+  const [preorderScanMode, setPreorderScanMode] = useState<'MANUAL' | 'QR'>('MANUAL');
   
   // History tab state
   const [historyTab, setHistoryTab] = useState<HistoryTab>('OFFLINE');
@@ -187,6 +189,58 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
       });
     }
   }, []);
+
+  // Handle PREORDER QR Scan - Simple base64 encoded JSON (not JWT)
+  const handlePreorderQRScan = useCallback(async (data: string) => {
+    console.log('=== PREORDER QR SCAN RECEIVED ===');
+    console.log('Raw data:', data?.substring(0, 100));
+    
+    setPreorderVerification({ status: 'VERIFYING' });
+    
+    try {
+      // Try to decode as Skipline Preorder QR
+      const decoded = decodePreorderQR(data);
+      
+      if (decoded.valid && decoded.data) {
+        console.log('✅ Valid preorder QR decoded:', decoded.data);
+        
+        // Search for the transaction in Firebase data
+        const allTransactions = [...transactions];
+        const localTxs = getAllTransactions();
+        localTxs.forEach(localTx => {
+          if (!allTransactions.find(tx => tx.id === localTx.id)) {
+            allTransactions.push(localTx);
+          }
+        });
+        
+        // Find by transaction ID from QR
+        let found = allTransactions.find(tx => 
+          tx.id === decoded.data!.txId || 
+          (tx.preorderPickupCode || '').toUpperCase() === (decoded.data!.pickupCode || '').toUpperCase()
+        );
+        
+        if (found) {
+          console.log('✅ PREORDER found via QR:', found.id);
+          const txWithItems = {
+            ...found,
+            items: found.items ? found.items.map(item => ({...item})) : []
+          };
+          setPreorderVerification({ status: 'FOUND', transaction: txWithItems });
+          setViewMode('PREORDER_RESULT');
+          setPreorderScanMode('MANUAL'); // Reset to manual mode
+        } else {
+          console.log('❌ Transaction not found for QR data:', decoded.data);
+          setPreorderVerification({ status: 'NOT_FOUND' });
+        }
+      } else {
+        console.log('❌ Invalid preorder QR:', decoded.error);
+        setPreorderVerification({ status: 'NOT_FOUND' });
+      }
+    } catch (e: any) {
+      console.error('Failed to process preorder QR:', e);
+      setPreorderVerification({ status: 'NOT_FOUND' });
+    }
+  }, [transactions]);
 
   // Handle gate release - Also expires the QR code
   const handleRelease = async () => {
@@ -756,7 +810,7 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
   }
 
   // ============================================
-  // PREORDER PICKUP VIEW - Code Only (No QR)
+  // PREORDER PICKUP VIEW - QR Scan or Manual Code
   // ============================================
   if (viewMode === 'PREORDER_SCANNER') {
     // Get all preorders for display
@@ -770,7 +824,10 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <button 
-              onClick={() => setViewMode('SCANNER')}
+              onClick={() => {
+                setViewMode('SCANNER');
+                setPreorderScanMode('MANUAL');
+              }}
               className="flex items-center gap-2 text-slate-400 hover:text-white"
             >
               <ArrowLeft className="w-4 h-4" /> Back
@@ -794,26 +851,84 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
             </div>
           </div>
           
-          {/* Pickup Code Search */}
-          <div className="bg-purple-900/30 rounded-2xl p-5 mb-6 border-2 border-purple-500/50">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
-                <ShoppingBag className="w-4 h-4 text-white" />
-              </div>
-              <p className="text-white font-bold">Enter Pickup Code</p>
-            </div>
-            <input
-              type="text"
-              value={preorderCode}
-              onChange={(e) => {
-                setPreorderCode(e.target.value.toUpperCase());
-                setPreorderVerification({ status: 'IDLE' }); // Reset error on input change
-              }}
-              placeholder="PU-XXXXXX"
-              className="w-full bg-slate-800 text-white text-3xl font-mono text-center py-5 rounded-xl border-2 border-purple-500/50 focus:border-purple-400 outline-none tracking-[0.25em] placeholder:tracking-normal placeholder:text-xl"
-              autoFocus
-            />
+          {/* Toggle: QR Scan vs Manual Entry */}
+          <div className="flex gap-2 mb-4">
             <button
+              onClick={() => setPreorderScanMode('QR')}
+              className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                preorderScanMode === 'QR'
+                  ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              }`}
+            >
+              📷 Scan QR Code
+            </button>
+            <button
+              onClick={() => setPreorderScanMode('MANUAL')}
+              className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                preorderScanMode === 'MANUAL'
+                  ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              }`}
+            >
+              ⌨️ Enter Code
+            </button>
+          </div>
+          
+          {/* QR Scanner Mode */}
+          {preorderScanMode === 'QR' && (
+            <div className="bg-purple-900/30 rounded-2xl p-4 mb-6 border-2 border-purple-500/50">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                  📷
+                </div>
+                <p className="text-white font-bold">Scan Customer's Preorder QR</p>
+              </div>
+              
+              <div className="rounded-xl overflow-hidden">
+                <CameraScanner 
+                  onScanSuccess={handlePreorderQRScan} 
+                  onError={(e) => console.error('Preorder QR scan error:', e)}
+                />
+              </div>
+              
+              {preorderVerification.status === 'VERIFYING' && (
+                <div className="mt-4 text-center">
+                  <Loader2 className="w-6 h-6 text-purple-400 animate-spin mx-auto" />
+                  <p className="text-purple-300 text-sm mt-2">Verifying QR code...</p>
+                </div>
+              )}
+              
+              {preorderVerification.status === 'NOT_FOUND' && (
+                <div className="mt-4 bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-center">
+                  <p className="text-red-400 font-bold">❌ Order Not Found</p>
+                  <p className="text-red-400/70 text-sm mt-1">Invalid QR or order doesn't exist</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Manual Code Entry Mode */}
+          {preorderScanMode === 'MANUAL' && (
+            <div className="bg-purple-900/30 rounded-2xl p-5 mb-6 border-2 border-purple-500/50">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                  <ShoppingBag className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-white font-bold">Enter Pickup Code</p>
+              </div>
+              <input
+                type="text"
+                value={preorderCode}
+                onChange={(e) => {
+                  setPreorderCode(e.target.value.toUpperCase());
+                  setPreorderVerification({ status: 'IDLE' }); // Reset error on input change
+                }}
+                placeholder="PU-XXXXXX"
+                className="w-full bg-slate-800 text-white text-3xl font-mono text-center py-5 rounded-xl border-2 border-purple-500/50 focus:border-purple-400 outline-none tracking-[0.25em] placeholder:tracking-normal placeholder:text-xl"
+                autoFocus
+              />
+              <button
               onClick={() => {
                 if (!preorderCode.trim()) return;
                 setPreorderVerification({ status: 'VERIFYING' });
@@ -889,7 +1004,8 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
                 <p className="text-red-400/70 text-sm mt-1">Check the code and try again</p>
               </div>
             )}
-          </div>
+            </div>
+          )}
           
           {/* Pending Preorders List */}
           <div>
