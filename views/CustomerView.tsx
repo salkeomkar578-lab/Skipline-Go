@@ -509,6 +509,15 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       
       console.log('✅ Preorder pickup verified by staff via Firebase:', notification);
       
+      // Update local transaction status
+      const updatedTx = { ...preorderTransaction, status: 'PREORDER_COLLECTED' };
+      setPreorderTransaction(updatedTx);
+      
+      // Update transaction history
+      setTransactionHistory(prev => 
+        prev.map(t => t.id === preorderTransaction.id ? { ...t, status: 'PREORDER_COLLECTED' } : t)
+      );
+      
       // Show pickup confirmed state
       setPickupConfirmed(true);
       setPickupCountdown(5);
@@ -516,6 +525,43 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     
     return () => unsubscribe();
   }, [preorderTransaction, viewState]);
+
+  // Listen for verification when viewing from history
+  useEffect(() => {
+    if (!viewingPreorder || viewState !== 'VIEW_PREORDER_QR') return;
+    if (viewingPreorder.status === 'PREORDER_COLLECTED') return; // Already collected
+    
+    console.log('🔔 Setting up Firebase notification listener for saved preorder:', viewingPreorder.id);
+    
+    const unsubscribe = subscribeToTransactionNotification(viewingPreorder.id, (notification) => {
+      if (!notification) return;
+      
+      console.log('✅ Saved preorder pickup verified by staff:', notification);
+      
+      // Update viewing preorder status
+      setViewingPreorder(prev => prev ? { ...prev, status: 'PREORDER_COLLECTED' } : null);
+      
+      // Update transaction history
+      setTransactionHistory(prev => 
+        prev.map(t => t.id === viewingPreorder.id ? { ...t, status: 'PREORDER_COLLECTED' } : t)
+      );
+      
+      // Show pickup confirmed state - redirect to success
+      setPickupConfirmed(true);
+      setPickupCountdown(5);
+      setViewState('PREORDER_QR');
+      setPreorderTransaction({
+        id: viewingPreorder.id,
+        items: viewingPreorder.items || [],
+        total: viewingPreorder.total,
+        mall: viewingPreorder.preorderMall || viewingPreorder.branch || '',
+        timestamp: viewingPreorder.timestamp,
+        pickupCode: viewingPreorder.preorderPickupCode || ''
+      });
+    });
+    
+    return () => unsubscribe();
+  }, [viewingPreorder, viewState]);
 
   // Countdown timer when pickup is confirmed
   useEffect(() => {
@@ -1757,14 +1803,25 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             
             {/* Main Message */}
             <h1 className="text-4xl font-black text-white mb-3">
-              🎉 Order Collected!
+              🎉 Pickup Done!
             </h1>
             <p className="text-white/90 text-lg mb-2">
-              Your items have been picked up successfully
+              Your products have been collected successfully
             </p>
             <p className="text-white/70 text-sm mb-8">
               Thank you for shopping with Skipline Go!
             </p>
+            
+            {/* Verification Badge */}
+            <div className="bg-white/20 backdrop-blur rounded-2xl p-4 mb-6 border-2 border-white/40">
+              <div className="flex items-center justify-center gap-2 text-white mb-2">
+                <ShieldCheck className="w-6 h-6" />
+                <span className="font-black text-lg">VERIFICATION COMPLETE</span>
+              </div>
+              <p className="text-white/80 text-sm">
+                QR code regeneration is now disabled
+              </p>
+            </div>
             
             {/* Order Details Card */}
             <div className="bg-white/20 backdrop-blur rounded-2xl p-4 mb-8">
@@ -2175,8 +2232,14 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   // VIEW SAVED PREORDER QR CODE
   // ============================================
   if (viewState === 'VIEW_PREORDER_QR' && viewingPreorder) {
+    const isCollected = viewingPreorder.status === 'PREORDER_COLLECTED';
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 safe-area-inset pb-24">
+      <div className={`min-h-screen safe-area-inset pb-24 ${
+        isCollected 
+          ? 'bg-gradient-to-br from-emerald-600 via-green-600 to-teal-600' 
+          : 'bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600'
+      }`}>
         <div className="max-w-lg mx-auto p-4 pt-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -2189,9 +2252,31 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             >
               ← Back
             </button>
-            <h1 className="text-lg font-bold text-white">Pickup QR Code</h1>
+            <h1 className="text-lg font-bold text-white">
+              {isCollected ? 'Pickup Complete' : 'Pickup QR Code'}
+            </h1>
             <div className="w-12" />
           </div>
+          
+          {/* VERIFIED - Pickup Done Message */}
+          {isCollected && (
+            <div className="text-center mb-6">
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <div className="absolute inset-0 bg-white/30 rounded-full animate-pulse" />
+                <div className="relative w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl">
+                  <ShieldCheck className="w-12 h-12 text-emerald-500" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2">🎉 Pickup Done!</h2>
+              <p className="text-white/80">Your products have been collected</p>
+              
+              {/* Verification Badge */}
+              <div className="mt-4 bg-white/20 backdrop-blur rounded-xl p-3 border border-white/30">
+                <p className="text-white font-bold text-sm">✅ Verification Complete</p>
+                <p className="text-white/70 text-xs">QR regeneration is disabled</p>
+              </div>
+            </div>
+          )}
           
           {/* Order Info */}
           <div className="text-center mb-4">
@@ -2203,14 +2288,12 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </p>
           </div>
           
-          {/* Status Badge */}
-          <div className={`mx-auto w-fit mb-4 px-4 py-2 rounded-full font-bold text-sm ${
-            viewingPreorder.status === 'PREORDER_COLLECTED' 
-              ? 'bg-emerald-500/20 text-emerald-300' 
-              : 'bg-amber-500/20 text-amber-300'
-          }`}>
-            {viewingPreorder.status === 'PREORDER_COLLECTED' ? '✅ Verification Done - Collected' : '⏳ Awaiting Pickup'}
-          </div>
+          {/* Status Badge - Only show if not collected */}
+          {!isCollected && (
+            <div className="mx-auto w-fit mb-4 px-4 py-2 rounded-full font-bold text-sm bg-amber-500/20 text-amber-300">
+              ⏳ Awaiting Pickup - QR valid for 5 mins
+            </div>
+          )}
           
           {/* QR Code Card */}
           <div className="bg-white rounded-3xl p-6 shadow-2xl mb-4">
@@ -2222,7 +2305,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               } as Transaction} 
               size={200}
               showAnimation={false}
-              isVerified={viewingPreorder.status === 'PREORDER_COLLECTED'}
+              isVerified={isCollected}
             />
           </div>
           
@@ -2269,25 +2352,40 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
                 copySuccess 
                   ? 'bg-emerald-500 text-white' 
-                  : 'bg-white text-purple-600'
+                  : isCollected ? 'bg-white/20 text-white/70' : 'bg-white text-purple-600'
               }`}
+              disabled={isCollected}
             >
               {copySuccess ? (
                 <><CheckCircle className="w-5 h-5" /> Code Copied!</>
+              ) : isCollected ? (
+                <>Pickup Code: {viewingPreorder.preorderPickupCode}</>
               ) : (
                 <><Copy className="w-5 h-5" /> Copy Pickup Code</>
               )}
             </button>
             
-            <button
-              onClick={() => {
-                setViewingPreorder(null);
-                setViewState('HISTORY');
-              }}
-              className="w-full bg-white/10 text-white py-4 rounded-xl font-bold"
-            >
-              Back to Orders
-            </button>
+            {isCollected ? (
+              <button
+                onClick={() => {
+                  setViewingPreorder(null);
+                  setViewState('MODE_SELECT');
+                }}
+                className="w-full bg-white text-emerald-600 py-4 rounded-xl font-bold"
+              >
+                🛒 Continue Shopping
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setViewingPreorder(null);
+                  setViewState('HISTORY');
+                }}
+                className="w-full bg-white/10 text-white py-4 rounded-xl font-bold"
+              >
+                Back to Orders
+              </button>
+            )}
           </div>
         </div>
         
