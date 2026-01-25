@@ -15,6 +15,7 @@ import { MessageSquare, Send, X, Bot, Sparkles, Loader2, MapPin, IndianRupee, Ch
 import { GlassCard } from './GlassCard';
 import { CartItem, AIConversation, BudgetAlert } from '../types';
 import { chatWithSahayak, getProductNavigation, checkBudgetStatus, getRecipeSuggestions } from '../services/geminiService';
+import { useLanguage } from '../context/LanguageContext';
 
 interface AIChatbotProps {
   mode: 'CUSTOMER' | 'STAFF';
@@ -35,16 +36,22 @@ interface QuickAction {
 }
 
 // Typing animation component
-const TypingIndicator: React.FC = () => (
-  <div className="flex items-center gap-1 p-3">
-    <div className="flex gap-1">
-      <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-      <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-      <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+const TypingIndicator: React.FC<{ language: string }> = ({ language }) => {
+  const typingText = language === 'mr' ? 'सहायक टाइप करत आहे...' 
+    : language === 'hi' ? 'सहायक टाइप कर रहा है...' 
+    : 'Sahayak is typing...';
+  
+  return (
+    <div className="flex items-center gap-1 p-3">
+      <div className="flex gap-1">
+        <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+      </div>
+      <span className="text-xs text-slate-500 ml-2">{typingText}</span>
     </div>
-    <span className="text-xs text-slate-500 ml-2">Sahayak is typing...</span>
-  </div>
-);
+  );
+};
 
 export const AIChatbot: React.FC<AIChatbotProps> = ({ 
   mode, 
@@ -55,6 +62,7 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
   currentAisle,
   onBudgetAlert
 }) => {
+  const { language, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<AIConversation[]>([]);
@@ -65,12 +73,48 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Language-aware quick action labels
+  const quickActionLabels = {
+    en: {
+      findProduct: 'Find Product',
+      findPrompt: 'Where can I find ',
+      budgetCheck: 'Budget Check',
+      budgetPrompt: "How much have I spent and what's left?",
+      recipeIdeas: 'Recipe Ideas',
+      recipePrompt: 'Suggest recipes with my cart items',
+      todaysDeals: "Today's Deals",
+      dealsPrompt: "What are today's best deals?"
+    },
+    mr: {
+      findProduct: 'उत्पादन शोधा',
+      findPrompt: 'मला कुठे मिळेल ',
+      budgetCheck: 'बजेट तपासा',
+      budgetPrompt: 'मी किती खर्च केली आणि किती शिल्लक आहे?',
+      recipeIdeas: 'रेसिपी आयडिया',
+      recipePrompt: 'माझ्या कार्टमध्ये आयटमसह रेसिपी सुचवा',
+      todaysDeals: 'आजच्या ऑफर्स',
+      dealsPrompt: 'आजच्या सर्वोत्तम ऑफर्स कोणत्या?'
+    },
+    hi: {
+      findProduct: 'प्रोडक्ट खोजें',
+      findPrompt: 'मुझे कहां मिलेगा ',
+      budgetCheck: 'बजट चेक',
+      budgetPrompt: 'मैंने कितना खर्च किया और कितना बचा है?',
+      recipeIdeas: 'रेसिपी आइडिया',
+      recipePrompt: 'मेरे कार्ट आइटम्स के साथ रेसिपी सुझाएं',
+      todaysDeals: 'आज की डील्स',
+      dealsPrompt: 'आज की सबसे अच्छी डील्स क्या हैं?'
+    }
+  };
+  
+  const currentLabels = quickActionLabels[language] || quickActionLabels.en;
+
   // Enhanced quick actions with colors
   const quickActions: QuickAction[] = [
-    { id: 'navigate', icon: <MapPin className="w-4 h-4" />, label: 'Find Product', prompt: 'Where can I find ', color: 'bg-blue-500' },
-    { id: 'budget', icon: <IndianRupee className="w-4 h-4" />, label: 'Budget Check', prompt: 'How much have I spent and what\'s left?', color: 'bg-emerald-500' },
-    { id: 'recipe', icon: <ChefHat className="w-4 h-4" />, label: 'Recipe Ideas', prompt: 'Suggest recipes with my cart items', color: 'bg-orange-500' },
-    { id: 'deals', icon: <Zap className="w-4 h-4" />, label: 'Today\'s Deals', prompt: 'What are today\'s best deals?', color: 'bg-purple-500' },
+    { id: 'navigate', icon: <MapPin className="w-4 h-4" />, label: currentLabels.findProduct, prompt: currentLabels.findPrompt, color: 'bg-blue-500' },
+    { id: 'budget', icon: <IndianRupee className="w-4 h-4" />, label: currentLabels.budgetCheck, prompt: currentLabels.budgetPrompt, color: 'bg-emerald-500' },
+    { id: 'recipe', icon: <ChefHat className="w-4 h-4" />, label: currentLabels.recipeIdeas, prompt: currentLabels.recipePrompt, color: 'bg-orange-500' },
+    { id: 'deals', icon: <Zap className="w-4 h-4" />, label: currentLabels.todaysDeals, prompt: currentLabels.dealsPrompt, color: 'bg-purple-500' },
   ];
 
   useEffect(() => {
@@ -283,9 +327,15 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
                 <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                   <Sparkles className="w-10 h-10 text-amber-600" />
                 </div>
-                <p className="font-black text-xl text-slate-900 mb-1">Namaste! 🙏</p>
-                <p className="text-sm text-slate-500">I'm Sahayak, your AI assistant</p>
-                <p className="text-xs text-slate-400 mt-1">Ask me anything!</p>
+                <p className="font-black text-xl text-slate-900 mb-1">
+                  {language === 'mr' ? 'नमस्कार! 🙏' : language === 'hi' ? 'नमस्ते! 🙏' : 'Namaste! 🙏'}
+                </p>
+                <p className="text-sm text-slate-500">
+                  {language === 'mr' ? 'मी सहायक, तुमचा AI सहाय्यक' : language === 'hi' ? 'मैं सहायक, आपका AI असिस्टेंट' : "I'm Sahayak, your AI assistant"}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {language === 'mr' ? 'काहीही विचारा!' : language === 'hi' ? 'कुछ भी पूछें!' : 'Ask me anything!'}
+                </p>
               </div>
             )}
             
@@ -343,7 +393,7 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
                   <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 shadow-md">
-                  <TypingIndicator />
+                  <TypingIndicator language={language} />
                 </div>
               </div>
             )}
@@ -374,7 +424,7 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Type a message..."
+              placeholder={language === 'mr' ? 'संदेश टाइप करा...' : language === 'hi' ? 'संदेश टाइप करें...' : 'Type a message...'}
               className="flex-1 bg-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 ring-amber-400 focus:bg-white transition-all"
             />
             <button 
@@ -400,7 +450,7 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
           
           {/* Tooltip */}
           <div className="absolute right-full mr-3 bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-            Chat with Sahayak AI
+            {language === 'mr' ? 'सहायक AI शी चॅट करा' : language === 'hi' ? 'सहायक AI से चैट करें' : 'Chat with Sahayak AI'}
             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 w-2 h-2 bg-slate-900 rotate-45" />
           </div>
         </button>

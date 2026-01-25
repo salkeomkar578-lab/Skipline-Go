@@ -1,3 +1,4 @@
+0.
 /**
  * Firebase Service - Skipline Go
  * Block 3: Central Database Operations

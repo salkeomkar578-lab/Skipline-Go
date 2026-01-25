@@ -1,7 +1,0 @@
-{
-  "name": "Skipline Go",
-  "description": "Premium Indian Smart Retail App with real-time barcode scanning and AI Sahayak assistant.",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}

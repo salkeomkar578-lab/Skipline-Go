@@ -34,7 +34,10 @@ export const MOCK_PRODUCTS: Product[] = [
     image: getProductImage('amul-milk-gold', 'icons'),
     icon: '🥛',
     aisle: 'Aisle 3', 
-    tags: ['milk', 'dairy', 'breakfast'] 
+    tags: ['milk', 'dairy', 'breakfast'],
+    description: 'Full cream milk with 6% fat content. Rich, creamy taste perfect for tea, coffee, or drinking plain. Fortified with Vitamin A & D.',
+    rating: 4.5,
+    reviews: 2340
   },
   { 
     id: '8901030663429', 
@@ -44,7 +47,10 @@ export const MOCK_PRODUCTS: Product[] = [
     image: getProductImage('amul-butter-500', 'icons'),
     icon: '🧈',
     aisle: 'Aisle 3', 
-    tags: ['butter', 'dairy', 'spread'] 
+    tags: ['butter', 'dairy', 'spread'],
+    description: 'Premium salted butter made from fresh cream. Perfect for spreading on toast, parathas, or cooking. Rich, creamy flavor.',
+    rating: 4.7,
+    reviews: 5621
   },
   { 
     id: '8901030663430', 
@@ -54,7 +60,10 @@ export const MOCK_PRODUCTS: Product[] = [
     image: getProductImage('mother-dairy-curd', 'icons'),
     icon: '🥣',
     aisle: 'Aisle 3', 
-    tags: ['curd', 'yogurt', 'dairy'] 
+    tags: ['curd', 'yogurt', 'dairy'],
+    description: 'Fresh, creamy curd with live active cultures. Great for digestion and perfect for raita, lassi, or eating with rice.',
+    rating: 4.3,
+    reviews: 1856
   },
   { 
     id: '8901030663431', 
@@ -64,7 +73,10 @@ export const MOCK_PRODUCTS: Product[] = [
     image: getProductImage('amul-cheese-slices', 'icons'),
     icon: '🧀',
     aisle: 'Aisle 3', 
-    tags: ['cheese', 'dairy', 'sandwich'] 
+    tags: ['cheese', 'dairy', 'sandwich'],
+    description: 'Processed cheese slices, individually wrapped. Perfect for sandwiches, burgers, and grilled cheese. Melts smoothly.',
+    rating: 4.4,
+    reviews: 3120
   },
   
   // Instant Food & Noodles (Aisle 13-14)
@@ -76,7 +88,10 @@ export const MOCK_PRODUCTS: Product[] = [
     image: getProductImage('maggi-noodles', 'icons'),
     icon: '🍜',
     aisle: 'Aisle 13', 
-    tags: ['noodles', 'instant', 'maggi'] 
+    tags: ['noodles', 'instant', 'maggi'],
+    description: 'India\'s favorite instant noodles! Ready in 2 minutes with the iconic masala flavor. Quick snack for any time.',
+    rating: 4.6,
+    reviews: 15420
   },
   { 
     id: '8901058000107', 
@@ -86,7 +101,10 @@ export const MOCK_PRODUCTS: Product[] = [
     image: getProductImage('yippee-noodles', 'icons'),
     icon: '🍜',
     aisle: 'Aisle 13', 
-    tags: ['noodles', 'instant', 'yippee'] 
+    tags: ['noodles', 'instant', 'yippee'],
+    description: 'Long, slurpy noodles with magic masala flavor. Stays non-sticky even after cooking. Family pack of 4.',
+    rating: 4.2,
+    reviews: 8954
   },
   { 
     id: '8901058000108', 
@@ -96,7 +114,10 @@ export const MOCK_PRODUCTS: Product[] = [
     image: getProductImage('top-ramen-curry', 'icons'),
     icon: '🍜',
     aisle: 'Aisle 13', 
-    tags: ['noodles', 'cup', 'instant'] 
+    tags: ['noodles', 'cup', 'instant'],
+    description: 'Smooth curry flavored noodles with vegetables. Authentic Japanese style instant noodles. Ready in minutes.',
+    rating: 4.1,
+    reviews: 4532
   },
   
   // Beverages (Aisle 7-8)

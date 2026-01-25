@@ -16,6 +16,9 @@ export interface Product {
   aisle?: string;       // For navigation: "Aisle 4"
   weight?: number;      // For weight verification (grams)
   tags?: string[];      // For AI recommendations
+  description?: string; // Product description for online browsing
+  rating?: number;      // Product rating (1-5)
+  reviews?: number;     // Number of reviews
 }
 
 export interface CartItem extends Product {
@@ -89,7 +92,7 @@ export interface Transaction {
   timestamp: number;
   theftScore: number;
   theftAnalysis: TheftAnalysis;
-  status: 'PENDING' | 'PAID' | 'VERIFIED' | 'FLAGGED' | 'AUDITED';
+  status: 'PENDING' | 'PAID' | 'VERIFIED' | 'FLAGGED' | 'AUDITED' | 'PREORDER_PENDING' | 'PREORDER_READY' | 'PREORDER_COLLECTED';
   paymentMethod: 'GOOGLE_PAY' | 'CARD' | 'UPI' | 'CASH';
   exitQRToken?: string;           // JWT token for exit verification
   exitQRExpiry?: number;          // Token expiry timestamp
@@ -100,6 +103,15 @@ export interface Transaction {
   sessionDuration: number;        // Total shopping time in seconds
   syncedToCloud: boolean;         // For offline mode tracking
   branch?: string;                // Mall branch name
+  qrExpired?: boolean;            // Flag if QR code has been expired
+  qrExpiredAt?: number;           // When QR was expired
+  qrExpiredReason?: string;       // Reason for QR expiration
+  // Preorder specific fields
+  isPreorder?: boolean;           // True if this is a preorder
+  preorderPickupCode?: string;    // Pickup code for preorder
+  preorderMall?: string;          // Mall for preorder pickup
+  preorderMallAddress?: string;   // Mall address
+  orderType?: 'ONLINE' | 'OFFLINE'; // Type of order for history filtering
 }
 
 // ==================== CART & SESSION TYPES ====================

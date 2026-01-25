@@ -13,6 +13,38 @@
 import { GoogleGenAI } from "@google/genai";
 import { BehaviorLog, TheftAnalysis, CartItem, Product, NavigationResult, BudgetAlert } from "../types";
 import { MOCK_PRODUCTS } from "../constants";
+import { Language } from "./languageService";
+
+// Language-specific greeting and response styles
+const LANGUAGE_CONFIG = {
+  en: {
+    name: 'English',
+    greeting: 'Namaste',
+    respectful: 'Ji',
+    instruction: 'Respond in English with occasional Hindi greetings like "Namaste".',
+    thanks: "You're welcome!",
+    help: 'I can help you',
+    currency: '₹'
+  },
+  mr: {
+    name: 'Marathi',
+    greeting: 'नमस्कार',
+    respectful: 'जी',
+    instruction: 'Respond ONLY in Marathi (मराठी). Use Devanagari script. Be warm and helpful.',
+    thanks: 'आपले स्वागत आहे!',
+    help: 'मी तुम्हाला मदत करू शकतो',
+    currency: '₹'
+  },
+  hi: {
+    name: 'Hindi',
+    greeting: 'नमस्ते',
+    respectful: 'जी',
+    instruction: 'Respond ONLY in Hindi (हिंदी). Use Devanagari script. Be warm and helpful.',
+    thanks: 'आपका स्वागत है!',
+    help: 'मैं आपकी मदद कर सकता हूं',
+    currency: '₹'
+  }
+};
 
 // Use the correct API key from environment
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
@@ -23,15 +55,24 @@ const MODEL_NAME = 'gemini-2.0-flash';
 /**
  * Mall Concierge System Instruction
  * Makes Gemini act as a helpful shopping assistant
+ * Now supports multiple languages!
  */
-const MALL_CONCIERGE_INSTRUCTION = `
-You are "Sahayak", the AI Shopping Assistant for Skipline Go - a smart self-checkout app for Indian malls.
+const getMallConciergeInstruction = (language: Language = 'en') => {
+  const langConfig = LANGUAGE_CONFIG[language];
+  
+  return `
+You are "Sahayak" (सहायक), the AI Shopping Assistant for Skipline Go - a smart self-checkout app for Indian malls.
+
+CRITICAL LANGUAGE INSTRUCTION:
+${langConfig.instruction}
+You MUST respond in ${langConfig.name} language ONLY. Do not mix languages unless using common terms.
 
 YOUR PERSONALITY:
-- Warm, helpful, and culturally aware (use "Namaste", "Ji" appropriately)
+- Warm, helpful, and culturally aware
 - Expert in Indian retail, products, and shopping habits
 - Knowledgeable about the store layout and product locations
 - Budget-conscious and value-focused (understand Indian price sensitivity)
+- Use "${langConfig.greeting}" for greetings and "${langConfig.respectful}" for respect
 
 YOUR CAPABILITIES:
 1. NAVIGATION: Guide customers to product locations using aisle numbers
@@ -58,7 +99,9 @@ RESPONSE GUIDELINES:
 - If unsure about location, suggest asking staff
 - For recipes, provide quick Indian-style suggestions
 - Mention relevant offers when appropriate
+- ALWAYS respond in ${langConfig.name}
 `;
+};
 
 /**
  * Initialize Gemini AI client
@@ -74,6 +117,7 @@ const getAI = () => {
 /**
  * Chat with Mall Concierge (Sahayak)
  * Main conversational interface for customers
+ * Now supports multiple languages!
  */
 export const chatWithSahayak = async (
   userMessage: string,
@@ -82,22 +126,29 @@ export const chatWithSahayak = async (
     cartTotal: number;
     budget?: number;
     currentAisle?: string;
+    language?: Language;
   }
 ): Promise<string> => {
+  const language = context.language || 'en';
+  
   try {
     const ai = getAI();
     
     // Fallback responses when API is not available
     if (!ai) {
-      return getFallbackResponse(userMessage, context);
+      return getFallbackResponse(userMessage, context, language);
     }
     
+    const langConfig = LANGUAGE_CONFIG[language];
     const contextPrompt = `
 CURRENT CONTEXT:
 - Customer's Cart: ${context.cartItems.length} items (₹${context.cartTotal.toFixed(2)})
 - Budget: ${context.budget ? `₹${context.budget}` : 'Not set'}
 - Location: ${context.currentAisle || 'Unknown'}
 - Cart Items: ${context.cartItems.map(i => i.name).join(', ') || 'Empty'}
+- Response Language: ${langConfig.name} (${language})
+
+IMPORTANT: Respond ONLY in ${langConfig.name}. ${langConfig.instruction}
 
 USER MESSAGE: ${userMessage}
 `;
@@ -106,30 +157,164 @@ USER MESSAGE: ${userMessage}
       model: MODEL_NAME,
       contents: contextPrompt,
       config: {
-        systemInstruction: MALL_CONCIERGE_INSTRUCTION,
-        temperature: 0.7,
-        maxOutputTokens: 200
+        systemInstruction: getMallConciergeInstruction(language),
+        temperature: 0.8,
+        maxOutputTokens: 250
       }
     });
 
-    return response.text || "I apologize, I couldn't process that. Please try again, Ji.";
+    const errorMsg = language === 'mr' 
+      ? 'माफ करा, मला ते समजले नाही. कृपया पुन्हा प्रयत्न करा जी.' 
+      : language === 'hi' 
+        ? 'क्षमा करें, मैं समझ नहीं पाया। कृपया फिर से प्रयास करें जी।' 
+        : "I apologize, I couldn't process that. Please try again, Ji.";
+    
+    return response.text || errorMsg;
   } catch (error) {
     console.error('Sahayak Error:', error);
-    return getFallbackResponse(userMessage, context);
+    return getFallbackResponse(userMessage, context, language);
+  }
+};
+
+/**
+ * Multi-language fallback responses when Gemini API is not available
+ * Added more variety to prevent repetitive responses
+ */
+const FALLBACK_RESPONSES = {
+  en: {
+    greetings: [
+      "Namaste! 🙏 I'm Sahayak, your shopping assistant. How can I help you today?",
+      "Hello! Welcome to Skipline Go! I'm here to make your shopping easier. What do you need?",
+      "Hi there! 👋 Ready to help you find products, track your budget, or suggest recipes!",
+      "Namaste! Looking for something specific or need shopping assistance?",
+      "Hey! I'm Sahayak, your smart shopping companion. Let's make shopping fun today!"
+    ],
+    help: [
+      "I can help you with:\n📍 Finding products (e.g., 'Where is milk?')\n💰 Budget tracking (e.g., 'Check my budget')\n🍳 Recipe ideas (e.g., 'Recipe for pasta')\n🛒 Cart info (e.g., 'What's in my cart?')",
+      "Here's what I can do:\n🔍 Locate any product in store\n💵 Track your spending\n👨‍🍳 Suggest quick recipes\n📊 Compare product prices",
+      "Need assistance? Ask me to:\n• Find products by name or category\n• Set and track your budget\n• Get cooking suggestions\n• Check current deals"
+    ],
+    emptyCart: [
+      "Your cart is empty! Start scanning products to add them. Need help finding something?",
+      "Ready to shop! Your cart awaits its first item. What are you looking for today?",
+      "Cart's all clear! Let me help you find what you need. Just ask!"
+    ],
+    cartInfo: (count: number, total: number, items: string) => {
+      const templates = [
+        `You have ${count} items totaling ₹${total.toFixed(2)}. Items: ${items}. Need anything else?`,
+        `Cart update: ${count} products worth ₹${total.toFixed(2)}. Your picks: ${items}.`,
+        `Shopping summary: ${count} items at ₹${total.toFixed(2)}. That's ${items}. Good choices!`
+      ];
+      return templates[Math.floor(Math.random() * templates.length)];
+    },
+    budgetSet: (total: number, remaining: number, budget: number) => {
+      const templates = [
+        `Cart: ₹${total.toFixed(2)} | Remaining: ₹${remaining.toFixed(2)} of ₹${budget} budget.`,
+        `You've spent ₹${total.toFixed(2)}. Still have ₹${remaining.toFixed(2)} in your ₹${budget} budget!`,
+        `Budget check: ₹${remaining.toFixed(2)} left from ₹${budget}. Current cart: ₹${total.toFixed(2)}.`
+      ];
+      return templates[Math.floor(Math.random() * templates.length)];
+    },
+    budgetNotSet: (total: number) => {
+      const templates = [
+        `Your current cart total is ₹${total.toFixed(2)}. Would you like to set a budget limit?`,
+        `Cart stands at ₹${total.toFixed(2)}. Set a budget to track spending better!`,
+        `Total so far: ₹${total.toFixed(2)}. Want me to help you stick to a budget?`
+      ];
+      return templates[Math.floor(Math.random() * templates.length)];
+    },
+    productFound: (name: string, aisle: string, price: number) => {
+      const templates = [
+        `Found it! ${name} is in ${aisle}. Price: ₹${price}. Shall I help you find anything else?`,
+        `${name} → ${aisle}, priced at ₹${price}. Great choice!`,
+        `Located! ${name} available in ${aisle} for ₹${price}. Need directions?`
+      ];
+      return templates[Math.floor(Math.random() * templates.length)];
+    },
+    dairy: [
+      "Dairy products are in Aisle 3! You'll find milk, butter, cheese, paneer, and yogurt there.",
+      "Head to Aisle 3 - Dairy Section for all milk products, curd, and cheese items!",
+      "Aisle 3 has everything dairy! From fresh milk to flavored yogurt."
+    ],
+    staples: [
+      "Staples like rice, dal, and atta are in Aisle 7-8 - Grains section.",
+      "For rice, dal, flour - check Aisle 7-8. All your kitchen staples in one place!",
+      "Aisle 7-8 is your staples paradise! Rice, pulses, flour, and more."
+    ],
+    snacks: [
+      "Snacks are in Aisle 5-6! Chips, biscuits, namkeen - all there!",
+      "Craving snacks? Aisle 5-6 has chips, cookies, and Indian namkeen!",
+      "Head to Aisle 5-6 for munchies - from Lay's to Parle-G!"
+    ],
+    findHelp: [
+      "I can help you locate products! Try asking 'Where is milk?' or 'Find rice'.",
+      "Looking for something? Just tell me the product name and I'll guide you!",
+      "Ask me about any product location - I know every aisle!"
+    ],
+    defaults: [
+      "I'm here to help! Ask me about products, prices, recipes, or your budget.",
+      "How can I assist your shopping today? Product search, budget tracking, or recommendations?",
+      "Need help? I can find products, suggest recipes, or track your spending!",
+      "What would you like to know? I'm your shopping expert today!",
+      "Ready to help! Ask about products, check your cart, or get recipe ideas."
+    ]
+  },
+  mr: {
+    greeting: "नमस्कार! 🙏 मी सहायक आहे, तुमचा खरेदी सहाय्यक. मी तुम्हाला उत्पादने शोधणे, बजेट ट्रॅक करणे आणि रेसिपी सुचवण्यात मदत करू शकतो. मी आज कशी मदत करू?",
+    help: "मी तुम्हाला यात मदत करू शकतो:\n📍 उत्पादने शोधणे (उदा. 'दूध कुठे आहे?')\n💰 बजेट ट्रॅकिंग (उदा. 'माझे बजेट तपासा')\n🍳 रेसिपी आयडिया (उदा. 'पास्ता रेसिपी')\n🛒 कार्ट माहिती (उदा. 'माझ्या कार्टमध्ये काय आहे?')",
+    emptyCart: "तुमची कार्ट रिकामी आहे! उत्पादने जोडण्यासाठी स्कॅन करणे सुरू करा. काही शोधायचे आहे का?",
+    cartInfo: (count: number, total: number, items: string) => 
+      `तुमच्या कार्टमध्ये ${count} आयटम आहेत, एकूण ₹${total.toFixed(2)}. आयटम: ${items}.`,
+    budgetSet: (total: number, remaining: number, budget: number) => 
+      `तुमची सध्याची कार्ट एकूण ₹${total.toFixed(2)} आहे. तुमच्या ₹${budget} बजेटमधून ₹${remaining.toFixed(2)} शिल्लक आहे.`,
+    budgetNotSet: (total: number) => 
+      `तुमची सध्याची कार्ट एकूण ₹${total.toFixed(2)} आहे. बजेट सेट करायचे आहे का? फक्त मला तुमची मर्यादा सांगा!`,
+    productFound: (name: string, aisle: string, price: number) => 
+      `नमस्कार! ${name} ${aisle} मध्ये उपलब्ध आहे. किंमत: ₹${price}. कार्टमध्ये जोडू का?`,
+    dairy: "नमस्कार! दुग्धजन्य उत्पादने Aisle 3 - डेअरी विभागात आहेत. तिथे दूध, लोणी, चीज आणि दही मिळेल!",
+    staples: "नमस्कार! तांदूळ, डाळ आणि आटा यांसारखे मुख्य पदार्थ Aisle 7-8 - धान्य आणि मुख्य विभागात आहेत.",
+    snacks: "नमस्कार! स्नॅक्स आणि बिस्किटे Aisle 5-6 मध्ये आहेत. तिथे चिप्स, कुकीज आणि नमकीन मिळेल!",
+    findHelp: "नमस्कार! मी तुम्हाला उत्पादने शोधण्यात मदत करू शकतो. 'दूध कुठे आहे?' किंवा 'तांदूळ शोधा' अशी विशिष्ट वस्तू विचारा.",
+    default: "नमस्कार! मी तुमच्या खरेदीत मदत करण्यासाठी येथे आहे. तुम्ही मला उत्पादने शोधायला, किंमती तपासायला, बजेट ट्रॅक करायला किंवा रेसिपी आयडिया मिळवायला सांगू शकता. काय जाणून घ्यायचे आहे?"
+  },
+  hi: {
+    greeting: "नमस्ते! 🙏 मैं सहायक हूं, आपका शॉपिंग असिस्टेंट। मैं आपको प्रोडक्ट खोजने, बजट ट्रैक करने और रेसिपी सुझाव देने में मदद कर सकता हूं। आज मैं कैसे मदद कर सकता हूं?",
+    help: "मैं आपकी इसमें मदद कर सकता हूं:\n📍 प्रोडक्ट खोजना (जैसे 'दूध कहां है?')\n💰 बजट ट्रैकिंग (जैसे 'मेरा बजट चेक करें')\n🍳 रेसिपी आइडिया (जैसे 'पास्ता रेसिपी')\n🛒 कार्ट जानकारी (जैसे 'मेरे कार्ट में क्या है?')",
+    emptyCart: "आपकी कार्ट खाली है! प्रोडक्ट जोड़ने के लिए स्कैन करना शुरू करें। कुछ खोजना है क्या?",
+    cartInfo: (count: number, total: number, items: string) => 
+      `आपके कार्ट में ${count} आइटम हैं, कुल ₹${total.toFixed(2)}। आइटम: ${items}।`,
+    budgetSet: (total: number, remaining: number, budget: number) => 
+      `आपकी वर्तमान कार्ट कुल ₹${total.toFixed(2)} है। आपके ₹${budget} बजट में से ₹${remaining.toFixed(2)} बचा है।`,
+    budgetNotSet: (total: number) => 
+      `आपकी वर्तमान कार्ट कुल ₹${total.toFixed(2)} है। बजट सेट करना चाहेंगे? बस मुझे अपनी सीमा बताएं!`,
+    productFound: (name: string, aisle: string, price: number) => 
+      `नमस्ते! ${name} ${aisle} में उपलब्ध है। कीमत: ₹${price}। क्या मैं इसे आपकी कार्ट में जोड़ूं?`,
+    dairy: "नमस्ते! डेयरी प्रोडक्ट Aisle 3 - डेयरी सेक्शन में हैं। वहां दूध, मक्खन, पनीर और दही मिलेगा!",
+    staples: "नमस्ते! चावल, दाल और आटा जैसे स्टेपल्स Aisle 7-8 - अनाज और स्टेपल्स सेक्शन में हैं।",
+    snacks: "नमस्ते! स्नैक्स और बिस्किट Aisle 5-6 में हैं। वहां चिप्स, कुकीज़ और नमकीन मिलेगा!",
+    findHelp: "नमस्ते! मैं आपको प्रोडक्ट खोजने में मदद कर सकता हूं। 'दूध कहां है?' या 'चावल खोजें' जैसे विशिष्ट आइटम के बारे में पूछें।",
+    default: "नमस्ते! मैं आपकी शॉपिंग में मदद करने के लिए यहां हूं। आप मुझसे प्रोडक्ट खोजने, कीमतें चेक करने, बजट ट्रैक करने या रेसिपी आइडिया पाने के लिए कह सकते हैं। क्या जानना चाहेंगे?"
   }
 };
 
 /**
  * Fallback responses when Gemini API is not available
+ * Now supports multiple languages with varied responses!
  */
 const getFallbackResponse = (
   userMessage: string,
-  context: { cartItems: CartItem[]; cartTotal: number; budget?: number; currentAisle?: string }
+  context: { cartItems: CartItem[]; cartTotal: number; budget?: number; currentAisle?: string },
+  language: Language = 'en'
 ): string => {
   const lowerMessage = userMessage.toLowerCase();
+  const responses = FALLBACK_RESPONSES[language];
+  
+  // Helper to get random item from array
+  const random = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
   
   // Product location queries
-  if (lowerMessage.includes('where') || lowerMessage.includes('find') || lowerMessage.includes('location')) {
+  if (lowerMessage.includes('where') || lowerMessage.includes('find') || lowerMessage.includes('location') ||
+      lowerMessage.includes('कुठे') || lowerMessage.includes('शोधा') || lowerMessage.includes('कहां') || lowerMessage.includes('खोजें')) {
     const productMatches = MOCK_PRODUCTS.filter(p => 
       lowerMessage.includes(p.name.toLowerCase()) || 
       lowerMessage.includes(p.category.toLowerCase())
@@ -137,52 +322,59 @@ const getFallbackResponse = (
     
     if (productMatches.length > 0) {
       const product = productMatches[0];
-      return `Namaste! ${product.name} is available in ${product.aisle}. Price: ₹${product.price}. Would you like me to add it to your cart?`;
+      return responses.productFound(product.name, product.aisle, product.price);
     }
     
     // Generic aisle info
-    if (lowerMessage.includes('milk') || lowerMessage.includes('dairy') || lowerMessage.includes('butter')) {
-      return "Namaste! Dairy products are in Aisle 3 - Dairy Section. You'll find milk, butter, cheese, and yogurt there!";
+    if (lowerMessage.includes('milk') || lowerMessage.includes('dairy') || lowerMessage.includes('butter') ||
+        lowerMessage.includes('दूध') || lowerMessage.includes('दुग्ध') || lowerMessage.includes('दही')) {
+      return Array.isArray(responses.dairy) ? random(responses.dairy) : responses.dairy;
     }
-    if (lowerMessage.includes('rice') || lowerMessage.includes('dal') || lowerMessage.includes('atta')) {
-      return "Namaste! Staples like rice, dal, and atta are in Aisle 7-8 - Grains & Staples section.";
+    if (lowerMessage.includes('rice') || lowerMessage.includes('dal') || lowerMessage.includes('atta') ||
+        lowerMessage.includes('तांदूळ') || lowerMessage.includes('चावल') || lowerMessage.includes('डाळ') || lowerMessage.includes('दाल')) {
+      return Array.isArray(responses.staples) ? random(responses.staples) : responses.staples;
     }
-    if (lowerMessage.includes('snack') || lowerMessage.includes('chips') || lowerMessage.includes('biscuit')) {
-      return "Namaste! Snacks and biscuits are in Aisle 5-6. You'll find chips, cookies, and namkeen there!";
+    if (lowerMessage.includes('snack') || lowerMessage.includes('chips') || lowerMessage.includes('biscuit') ||
+        lowerMessage.includes('स्नॅक') || lowerMessage.includes('स्नैक') || lowerMessage.includes('चिप्स')) {
+      return Array.isArray(responses.snacks) ? random(responses.snacks) : responses.snacks;
     }
     
-    return "Namaste! I can help you find products. Please ask about specific items like 'Where is milk?' or 'Find rice'.";
+    return Array.isArray(responses.findHelp) ? random(responses.findHelp) : responses.findHelp;
   }
   
   // Budget queries
-  if (lowerMessage.includes('budget') || lowerMessage.includes('total') || lowerMessage.includes('spend')) {
+  if (lowerMessage.includes('budget') || lowerMessage.includes('total') || lowerMessage.includes('spend') ||
+      lowerMessage.includes('बजेट') || lowerMessage.includes('खर्च') || lowerMessage.includes('एकूण') || lowerMessage.includes('कुल')) {
     const remaining = context.budget ? context.budget - context.cartTotal : 0;
     if (context.budget) {
-      return `Your current cart total is ₹${context.cartTotal.toFixed(2)}. You have ₹${remaining.toFixed(2)} remaining from your ₹${context.budget} budget.`;
+      return responses.budgetSet(context.cartTotal, remaining, context.budget);
     }
-    return `Your current cart total is ₹${context.cartTotal.toFixed(2)}. Would you like to set a budget? Just tell me your limit!`;
+    return responses.budgetNotSet(context.cartTotal);
   }
   
   // Greeting
-  if (lowerMessage.includes('hi') || lowerMessage.includes('hello') || lowerMessage.includes('namaste')) {
-    return "Namaste! 🙏 I'm Sahayak, your shopping assistant. I can help you find products, track your budget, and suggest recipes. How can I assist you today?";
+  if (lowerMessage.includes('hi') || lowerMessage.includes('hello') || lowerMessage.includes('namaste') ||
+      lowerMessage.includes('नमस्कार') || lowerMessage.includes('नमस्ते') || lowerMessage.includes('हाय')) {
+    const greetings = responses.greetings || responses.greeting;
+    return Array.isArray(greetings) ? random(greetings) : greetings;
   }
   
   // Help
-  if (lowerMessage.includes('help')) {
-    return "I can help you with:\n📍 Finding products (e.g., 'Where is milk?')\n💰 Budget tracking (e.g., 'Check my budget')\n🍳 Recipe ideas (e.g., 'Recipe for pasta')\n🛒 Cart info (e.g., 'What's in my cart?')";
+  if (lowerMessage.includes('help') || lowerMessage.includes('मदत') || lowerMessage.includes('मदद') || lowerMessage.includes('सहाय्य')) {
+    return Array.isArray(responses.help) ? random(responses.help) : responses.help;
   }
   
   // Cart info
-  if (lowerMessage.includes('cart')) {
+  if (lowerMessage.includes('cart') || lowerMessage.includes('कार्ट') || lowerMessage.includes('कार्टमध्ये')) {
     if (context.cartItems.length === 0) {
-      return "Your cart is empty! Start scanning products to add them. Need help finding something?";
+      return Array.isArray(responses.emptyCart) ? random(responses.emptyCart) : responses.emptyCart;
     }
-    return `You have ${context.cartItems.length} items in your cart totaling ₹${context.cartTotal.toFixed(2)}. Items: ${context.cartItems.map(i => i.name).join(', ')}.`;
+    return responses.cartInfo(context.cartItems.length, context.cartTotal, context.cartItems.map(i => i.name).join(', '));
   }
   
-  // Default response
-  return "Namaste! I'm here to help with your shopping. You can ask me to find products, check prices, track your budget, or get recipe ideas. What would you like to know?";
+  // Default response - varied
+  const defaults = responses.defaults || responses.default;
+  return Array.isArray(defaults) ? random(defaults) : defaults;
 };
 
 /**

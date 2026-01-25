@@ -19,62 +19,32 @@ import { StaffView } from './views/StaffView';
 import { signInWithGoogle } from './config/firebase';
 import { saveGuestUser } from './services/firebaseService';
 import { AnimatedLogo } from './components/AnimatedLogo';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { LanguageSelector } from './components/LanguageSelector';
 
 type AppMode = 'LANDING' | 'GUIDE' | 'CUSTOMER' | 'STAFF';
 
-// Step-by-step USER GUIDE (How to use the app)
-const userGuideSteps = [
-  {
-    step: 1,
-    icon: <Smartphone className="w-10 h-10" />,
-    title: "Open Skipline Go App",
-    instruction: "Launch the app on your phone and sign in as Guest or with Google.",
-    tip: "💡 Guest mode works without any account!",
-    color: "from-blue-500 to-cyan-500"
-  },
-  {
-    step: 2,
-    icon: <Wifi className="w-10 h-10" />,
-    title: "Connect to Mall WiFi",
-    instruction: "Select 'Online Mode' and choose your mall branch from the list.",
-    tip: "💡 Offline mode also works - data syncs later!",
-    color: "from-purple-500 to-pink-500"
-  },
-  {
-    step: 3,
-    icon: <Camera className="w-10 h-10" />,
-    title: "Scan Products",
-    instruction: "Point your camera at product barcodes. Items auto-add to your cart.",
-    tip: "💡 You can adjust quantity or remove items anytime!",
-    color: "from-emerald-500 to-green-500"
-  },
-  {
-    step: 4,
-    icon: <CreditCard className="w-10 h-10" />,
-    title: "Pay in App",
-    instruction: "Review your cart and tap 'Pay Now'. Complete payment securely.",
-    tip: "💡 Supports UPI, Cards, and Wallets!",
-    color: "from-orange-500 to-amber-500"
-  },
-  {
-    step: 5,
-    icon: <QrCode className="w-10 h-10" />,
-    title: "Get Exit QR Code",
-    instruction: "After payment, you'll receive a unique QR code on your screen.",
-    tip: "💡 Keep this QR ready - you'll need it at the exit!",
-    color: "from-rose-500 to-red-500"
-  },
-  {
-    step: 6,
-    icon: <DoorOpen className="w-10 h-10" />,
-    title: "Show QR at Exit",
-    instruction: "At the exit gate, show your QR to the staff scanner. Done!",
-    tip: "💡 Green checkmark = You're free to go! 🎉",
-    color: "from-teal-500 to-cyan-500"
-  }
+// Icons for user guide steps
+const guideStepIcons = [
+  <Smartphone className="w-10 h-10" />,
+  <Wifi className="w-10 h-10" />,
+  <Camera className="w-10 h-10" />,
+  <CreditCard className="w-10 h-10" />,
+  <QrCode className="w-10 h-10" />,
+  <DoorOpen className="w-10 h-10" />
 ];
 
-const App: React.FC = () => {
+const guideStepColors = [
+  "from-blue-500 to-cyan-500",
+  "from-purple-500 to-pink-500",
+  "from-emerald-500 to-green-500",
+  "from-orange-500 to-amber-500",
+  "from-rose-500 to-red-500",
+  "from-teal-500 to-cyan-500"
+];
+
+const AppContent: React.FC = () => {
+  const { t } = useLanguage();
   // Initialize user from localStorage immediately (no loading state needed)
   const [user, setUser] = useState<any>(() => {
     try {
@@ -167,15 +137,30 @@ const App: React.FC = () => {
     setMode('GUIDE');
   };
 
+  // Get translated guide steps
+  const userGuideSteps = [
+    { ...t.guide.steps.openApp, step: 1, icon: guideStepIcons[0], color: guideStepColors[0] },
+    { ...t.guide.steps.connectWifi, step: 2, icon: guideStepIcons[1], color: guideStepColors[1] },
+    { ...t.guide.steps.scanProducts, step: 3, icon: guideStepIcons[2], color: guideStepColors[2] },
+    { ...t.guide.steps.payInApp, step: 4, icon: guideStepIcons[3], color: guideStepColors[3] },
+    { ...t.guide.steps.getExitQR, step: 5, icon: guideStepIcons[4], color: guideStepColors[4] },
+    { ...t.guide.steps.showQRAtExit, step: 6, icon: guideStepIcons[5], color: guideStepColors[5] },
+  ];
+
   // USER GUIDE screen - Step by step instructions
   if (mode === 'GUIDE') {
     const step = userGuideSteps[guideStep];
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col p-6">
+        {/* Language Selector */}
+        <div className="absolute top-4 right-4">
+          <LanguageSelector variant="dark" />
+        </div>
+        
         <div className="max-w-md w-full mx-auto flex-1 flex flex-col">
           {/* Header */}
           <div className="text-center mb-4">
-            <h1 className="text-amber-500 font-black text-lg">📖 HOW TO USE SKIPLINE GO</h1>
+            <h1 className="text-amber-500 font-black text-lg">{t.guide.howToUseApp}</h1>
           </div>
           
           {/* Progress bar */}
@@ -193,7 +178,7 @@ const App: React.FC = () => {
           {/* Step number */}
           <div className="text-center mb-4">
             <span className="bg-amber-500 text-slate-900 px-4 py-1 rounded-full text-sm font-black">
-              STEP {step.step} OF {userGuideSteps.length}
+              {t.guide.step} {step.step} {t.guide.of} {userGuideSteps.length}
             </span>
           </div>
 
@@ -214,7 +199,7 @@ const App: React.FC = () => {
                 onClick={() => setGuideStep(s => s - 1)}
                 className="flex-1 bg-slate-700 text-white py-4 px-6 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-600 transition-all"
               >
-                <ArrowLeft className="w-5 h-5" /> Back
+                <ArrowLeft className="w-5 h-5" /> {t.guide.back}
               </button>
             )}
             
@@ -223,14 +208,14 @@ const App: React.FC = () => {
                 onClick={() => setGuideStep(s => s + 1)}
                 className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 px-6 rounded-2xl font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-all"
               >
-                Next Step <ArrowRight className="w-5 h-5" />
+                {t.guide.nextStep} <ArrowRight className="w-5 h-5" />
               </button>
             ) : (
               <button
                 onClick={completeGuide}
                 className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 text-white py-4 px-6 rounded-2xl font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-all"
               >
-                <CheckCircle className="w-5 h-5" /> I'm Ready!
+                <CheckCircle className="w-5 h-5" /> {t.guide.imReady}
               </button>
             )}
           </div>
@@ -240,7 +225,7 @@ const App: React.FC = () => {
             onClick={completeGuide}
             className="w-full text-slate-500 py-3 mt-3 text-sm font-medium hover:text-slate-300 transition-colors"
           >
-            Skip Guide
+            {t.guide.skipGuide}
           </button>
         </div>
       </div>
@@ -251,10 +236,15 @@ const App: React.FC = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex flex-col items-center justify-center p-6">
+        {/* Language Selector */}
+        <div className="absolute top-4 right-4">
+          <LanguageSelector variant="light" />
+        </div>
+        
         <div className="max-w-md w-full space-y-8">
           {/* Animated Logo */}
           <AnimatedLogo size="lg" showText={true} animate={true} />
-          <p className="text-slate-400 text-sm text-center -mt-4">Smart Mall Checkout • Scan & Pay</p>
+          <p className="text-slate-400 text-sm text-center -mt-4">{t.app.smartMallCheckout} • Scan & Pay</p>
 
           {/* Login Options - Two Separate Sections */}
           <div className="space-y-4">
@@ -262,15 +252,15 @@ const App: React.FC = () => {
             {/* OPTION 1: Quick Guest Access - NO Authentication */}
             <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-1 rounded-3xl shadow-xl">
               <div className="bg-white p-6 rounded-[1.4rem]">
-                <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider mb-2">⚡ Quick Access</p>
+                <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider mb-2">{t.landing.quickAccess}</p>
                 <button
                   onClick={handleGuestSignIn}
                   className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white py-4 px-6 rounded-2xl font-bold flex items-center justify-center gap-3 hover:shadow-lg hover:scale-[1.02] transition-all text-lg"
                 >
                   <UserCircle className="w-6 h-6" />
-                  Continue as Guest
+                  {t.landing.continueAsGuest}
                 </button>
-                <p className="text-xs text-slate-400 text-center mt-2">No sign-up needed • Start shopping instantly</p>
+                <p className="text-xs text-slate-400 text-center mt-2">{t.landing.noSignUpNeeded} • {t.landing.startShoppingInstantly}</p>
               </div>
             </div>
 
@@ -280,13 +270,13 @@ const App: React.FC = () => {
                 <div className="w-full border-t-2 border-slate-200"></div>
               </div>
               <div className="relative flex justify-center">
-                <span className="bg-gradient-to-br from-amber-50 via-white to-orange-50 px-4 text-slate-400 text-sm font-medium">or sign in to save history</span>
+                <span className="bg-gradient-to-br from-amber-50 via-white to-orange-50 px-4 text-slate-400 text-sm font-medium">{t.landing.orSignInToSaveHistory}</span>
               </div>
             </div>
 
             {/* OPTION 2: Google Authentication */}
             <div className="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-100">
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">🔐 With Account</p>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">{t.landing.withAccount}</p>
               <button
                 onClick={handleGoogleSignIn}
                 disabled={signingIn}
@@ -302,9 +292,9 @@ const App: React.FC = () => {
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
                 )}
-                Continue with Google
+                {t.landing.continueWithGoogle}
               </button>
-              <p className="text-xs text-slate-400 text-center mt-2">Sync purchases across devices</p>
+              <p className="text-xs text-slate-400 text-center mt-2">{t.landing.syncAcrossDevices}</p>
             </div>
           </div>
 
@@ -313,11 +303,11 @@ const App: React.FC = () => {
             onClick={startGuide}
             className="w-full text-amber-600 py-3 text-sm font-semibold hover:text-amber-700 flex items-center justify-center gap-2 transition-colors"
           >
-            <Sparkles className="w-4 h-4" /> 📖 How to use Skipline Go?
+            <Sparkles className="w-4 h-4" /> {t.landing.howToUse}
           </button>
 
           <p className="text-center text-xs text-slate-400">
-            MyTech Team • v2.0.0
+            {t.app.myTechTeam} • {t.app.version}
           </p>
         </div>
       </div>
@@ -328,13 +318,18 @@ const App: React.FC = () => {
   if (mode === 'LANDING') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex flex-col items-center justify-center p-6">
+        {/* Language Selector */}
+        <div className="absolute top-4 right-4">
+          <LanguageSelector variant="light" />
+        </div>
+        
         <div className="max-w-md w-full space-y-6">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-amber-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl mb-4">
               <Store className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Welcome to Skipline Go</h1>
+            <h1 className="text-2xl font-bold text-slate-900">{t.landing.welcomeTo}</h1>
             <p className="text-slate-500 text-sm mt-1">
               {user.displayName || 'Guest'} • {user.email || 'Anonymous User'}
             </p>
@@ -346,7 +341,7 @@ const App: React.FC = () => {
               onClick={startGuide}
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 p-4 rounded-2xl text-white font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-all mb-2"
             >
-              <Sparkles className="w-5 h-5" /> 📖 First time? Learn how to use!
+              <Sparkles className="w-5 h-5" /> {t.modeSelect.firstTimeLearn}
             </button>
           )}
 
@@ -361,8 +356,8 @@ const App: React.FC = () => {
                 <ShoppingCart className="w-8 h-8 text-amber-600 group-hover:text-white transition-colors" />
               </div>
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-slate-900">Customer Mode</h2>
-                <p className="text-slate-500 text-sm">Scan products, pay & get exit QR</p>
+                <h2 className="text-xl font-bold text-slate-900">{t.modeSelect.customerMode}</h2>
+                <p className="text-slate-500 text-sm">{t.modeSelect.customerModeDesc}</p>
               </div>
             </button>
 
@@ -375,8 +370,8 @@ const App: React.FC = () => {
                 <ShieldCheck className="w-8 h-8 text-emerald-500 group-hover:text-white transition-colors" />
               </div>
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-white">Staff Mode</h2>
-                <p className="text-slate-400 text-sm">Verify exit QR codes & dashboard</p>
+                <h2 className="text-xl font-bold text-white">{t.modeSelect.staffMode}</h2>
+                <p className="text-slate-400 text-sm">{t.modeSelect.staffModeDesc}</p>
               </div>
             </button>
           </div>
@@ -386,52 +381,45 @@ const App: React.FC = () => {
             onClick={handleSignOut}
             className="w-full text-slate-500 py-3 text-sm font-medium hover:text-slate-700 flex items-center justify-center gap-2"
           >
-            <LogOut className="w-4 h-4" /> Sign Out
+            <LogOut className="w-4 h-4" /> {t.landing.signOut}
           </button>
         </div>
       </div>
     );
   }
 
-  // CUSTOMER MODE - Full screen customer experience
+  // CUSTOMER MODE - Full screen customer experience (standalone)
   if (mode === 'CUSTOMER') {
     return (
       <div className="min-h-screen bg-slate-50">
-        {/* Back to mode selector */}
-        <div className="fixed top-4 right-4 z-50">
-          <button
-            onClick={() => setMode('LANDING')}
-            className="bg-white shadow-lg px-4 py-2 rounded-full text-sm font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-2"
-          >
-            <LogOut className="w-4 h-4" /> Exit
-          </button>
-        </div>
-        
-        <CustomerView userId={user.uid} userTier="NEW" />
+        <CustomerView 
+          userId={user.uid} 
+          userTier="NEW" 
+          onExit={() => setMode('LANDING')}
+        />
       </div>
     );
   }
 
-  // STAFF MODE - Full screen staff experience
+  // STAFF MODE - Full screen staff experience (standalone - no floating buttons)
   if (mode === 'STAFF') {
     return (
       <div className="min-h-screen bg-slate-900">
-        {/* Back to mode selector */}
-        <div className="fixed top-4 right-4 z-50">
-          <button
-            onClick={() => setMode('LANDING')}
-            className="bg-white/10 px-4 py-2 rounded-full text-sm font-bold text-white hover:bg-white/20 flex items-center gap-2"
-          >
-            <LogOut className="w-4 h-4" /> Exit
-          </button>
-        </div>
-        
-        <StaffView />
+        <StaffView onExit={() => setMode('LANDING')} />
       </div>
     );
   }
 
   return null;
+};
+
+// Main App component wrapped with LanguageProvider
+const App: React.FC = () => {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
 };
 
 export default App;

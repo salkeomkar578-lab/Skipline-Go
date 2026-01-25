@@ -85,6 +85,45 @@ export const updateTransactionStatus = (
 };
 
 /**
+ * Expire QR code for a transaction (called when gate is released)
+ * This invalidates the exit QR token so it cannot be reused
+ */
+export const expireTransactionQR = (txId: string): boolean => {
+  const transactions = getAllTransactions();
+  const index = transactions.findIndex(t => t.id === txId);
+  
+  if (index >= 0) {
+    transactions[index] = {
+      ...transactions[index],
+      exitQRExpiry: Date.now() - 1000, // Set expiry to past time
+      qrExpired: true, // Flag as expired
+      qrExpiredAt: Date.now(),
+      qrExpiredReason: 'GATE_RELEASED'
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+    notifyListeners();
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Check if QR is expired for a transaction
+ */
+export const isQRExpired = (txId: string): boolean => {
+  const transaction = getTransactionById(txId);
+  if (!transaction) return true;
+  
+  // Check if manually expired
+  if ((transaction as any).qrExpired) return true;
+  
+  // Check if expired by time
+  if (transaction.exitQRExpiry && transaction.exitQRExpiry < Date.now()) return true;
+  
+  return false;
+};
+
+/**
  * Subscribe to transaction changes
  */
 export const subscribeToTransactions = (callback: TransactionListener): (() => void) => {
