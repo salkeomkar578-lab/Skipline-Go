@@ -179,6 +179,100 @@ button, .no-select {
   }
 }
 
+/* 3D Cube Animation for QR Generation */
+.qr-cube-container {
+  perspective: 200px;
+}
+
+.qr-3d-cube {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: cube-rotate 2s ease-in-out infinite;
+}
+
+@keyframes cube-rotate {
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  25% { transform: rotateX(90deg) rotateY(90deg); }
+  50% { transform: rotateX(180deg) rotateY(180deg); }
+  75% { transform: rotateX(270deg) rotateY(270deg); }
+  100% { transform: rotateX(360deg) rotateY(360deg); }
+}
+
+.cube-face {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  border: 2px solid rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 20px rgba(255,255,255,0.2);
+}
+
+.cube-front  { transform: translateZ(40px); }
+.cube-back   { transform: rotateY(180deg) translateZ(40px); }
+.cube-right  { transform: rotateY(90deg) translateZ(40px); }
+.cube-left   { transform: rotateY(-90deg) translateZ(40px); }
+.cube-top    { transform: rotateX(90deg) translateZ(40px); }
+.cube-bottom { transform: rotateX(-90deg) translateZ(40px); }
+
+/* QR Building Animation */
+.qr-grid-build {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  padding: 8px;
+}
+
+.qr-cell-build {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  animation: cell-pop 0.3s ease-out forwards;
+  opacity: 0;
+  transform: scale(0);
+}
+
+@keyframes cell-pop {
+  0% { opacity: 0; transform: scale(0) rotate(180deg); }
+  60% { transform: scale(1.2) rotate(0deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.qr-scan-line {
+  background: linear-gradient(to bottom, transparent, #7c3aed, transparent);
+  height: 4px;
+  animation: scan-move 1s ease-in-out infinite;
+}
+
+@keyframes scan-move {
+  0%, 100% { top: 0; }
+  50% { top: calc(100% - 4px); }
+}
+
+/* QR Reveal 3D Flip */
+.qr-reveal-3d {
+  animation: qr-flip-reveal 0.6s ease-out forwards;
+}
+
+@keyframes qr-flip-reveal {
+  0% {
+    transform: perspective(1000px) rotateY(-180deg) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: perspective(1000px) rotateY(-90deg) scale(0.8);
+  }
+  100% {
+    transform: perspective(1000px) rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
 @keyframes success-pulse {
   0%, 100% {
     transform: scale(1);

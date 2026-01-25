@@ -69,6 +69,10 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
   }>({ status: 'IDLE' });
   const [preorderScanMode, setPreorderScanMode] = useState<'MANUAL' | 'QR'>('MANUAL');
   
+  // Confirmation popup state
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+  const [pendingCollectTx, setPendingCollectTx] = useState<Transaction | null>(null);
+  
   // History tab state
   const [historyTab, setHistoryTab] = useState<HistoryTab>('OFFLINE');
 
@@ -1165,18 +1169,9 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
             <div className="max-w-lg mx-auto">
               {!isCollected ? (
                 <button
-                  onClick={async () => {
-                    // Mark as collected - updates both local storage AND Firebase
-                    await updateFirebaseTransactionStatus(tx.id, 'PREORDER_COLLECTED', 'STAFF-001');
-                    
-                    // Send notification to customer via Firebase (works across devices)
-                    await sendVerificationNotification(tx.id, 'preorder_collected', 'Order collected successfully!');
-                    console.log('📢 Preorder pickup notification sent to customer');
-                    
-                    setPreorderVerification({ 
-                      status: 'FOUND', 
-                      transaction: { ...tx, status: 'PREORDER_COLLECTED' }
-                    });
+                  onClick={() => {
+                    setPendingCollectTx(tx);
+                    setShowConfirmPopup(true);
                   }}
                   className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2"
                 >
@@ -1192,6 +1187,94 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
               )}
             </div>
           </div>
+          
+          {/* Confirmation Popup with Items List */}
+          {showConfirmPopup && pendingCollectTx && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+              <div className="bg-slate-900 rounded-3xl p-6 max-w-md w-full border-2 border-purple-500 shadow-2xl max-h-[85vh] overflow-y-auto">
+                {/* Header */}
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <ShoppingBag className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h2 className="text-xl font-black text-white">Confirm Order Collection</h2>
+                  <p className="text-slate-400 text-sm mt-1">Please verify items before confirming</p>
+                </div>
+                
+                {/* Order Details */}
+                <div className="bg-purple-900/30 rounded-xl p-4 mb-4 border border-purple-500/30">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-purple-300 text-sm">Pickup Code</span>
+                    <span className="text-white font-mono font-bold text-lg">{pendingCollectTx.preorderPickupCode}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-purple-300 text-sm">Total Amount</span>
+                    <span className="text-emerald-400 font-bold text-lg">₹{pendingCollectTx.total.toFixed(0)}</span>
+                  </div>
+                </div>
+                
+                {/* Items List */}
+                <div className="bg-slate-800/50 rounded-xl p-4 mb-4 border border-slate-700">
+                  <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
+                    📦 Order Items ({pendingCollectTx.items?.length || 0})
+                  </h3>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {pendingCollectTx.items?.map((item, i) => (
+                      <div key={i} className="flex items-center gap-3 bg-slate-700/50 p-3 rounded-lg">
+                        <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center text-xl">
+                          {item.icon || '📦'}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white font-bold text-sm">{item.name}</p>
+                          <p className="text-slate-400 text-xs">₹{item.price} × {item.quantity}</p>
+                        </div>
+                        <p className="text-white font-bold">₹{(item.price * item.quantity).toFixed(0)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Warning */}
+                <div className="bg-amber-500/20 border border-amber-500/30 rounded-xl p-3 mb-4">
+                  <p className="text-amber-400 text-sm text-center">
+                    ⚠️ Make sure all items are handed to the customer before confirming
+                  </p>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="space-y-2">
+                  <button
+                    onClick={async () => {
+                      // Mark as collected
+                      await updateFirebaseTransactionStatus(pendingCollectTx.id, 'PREORDER_COLLECTED', 'STAFF-001');
+                      await sendVerificationNotification(pendingCollectTx.id, 'preorder_collected', 'Order collected successfully!');
+                      console.log('📢 Preorder pickup notification sent to customer');
+                      
+                      setPreorderVerification({ 
+                        status: 'FOUND', 
+                        transaction: { ...pendingCollectTx, status: 'PREORDER_COLLECTED' }
+                      });
+                      setShowConfirmPopup(false);
+                      setPendingCollectTx(null);
+                    }}
+                    className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                    Confirm Collection
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowConfirmPopup(false);
+                      setPendingCollectTx(null);
+                    }}
+                    className="w-full bg-slate-700 text-slate-300 py-3 rounded-xl font-bold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

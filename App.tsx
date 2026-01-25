@@ -152,9 +152,9 @@ const AppContent: React.FC = () => {
     const step = userGuideSteps[guideStep];
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col p-6">
-        {/* Language Selector */}
+        {/* Language Selector - Opens downward at top */}
         <div className="absolute top-4 right-4">
-          <LanguageSelector variant="dark" />
+          <LanguageSelector variant="dark" openDirection="down" />
         </div>
         
         <div className="max-w-md w-full mx-auto flex-1 flex flex-col">
@@ -236,9 +236,9 @@ const AppContent: React.FC = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex flex-col items-center justify-center p-6">
-        {/* Language Selector */}
+        {/* Language Selector - Opens downward at top */}
         <div className="absolute top-4 right-4">
-          <LanguageSelector variant="light" />
+          <LanguageSelector variant="light" openDirection="down" />
         </div>
         
         <div className="max-w-md w-full space-y-8">
@@ -318,9 +318,9 @@ const AppContent: React.FC = () => {
   if (mode === 'LANDING') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex flex-col items-center justify-center p-6">
-        {/* Language Selector */}
+        {/* Language Selector - Opens downward at top */}
         <div className="absolute top-4 right-4">
-          <LanguageSelector variant="light" />
+          <LanguageSelector variant="light" openDirection="down" />
         </div>
         
         <div className="max-w-md w-full space-y-6">

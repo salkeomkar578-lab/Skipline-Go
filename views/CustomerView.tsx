@@ -763,6 +763,38 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               </div>
             </button>
 
+            {/* Pending Pickups - Show saved preorder codes */}
+            {(() => {
+              const pendingPickups = transactionHistory.filter(tx => 
+                tx.isPreorder && tx.status !== 'PREORDER_COLLECTED'
+              );
+              if (pendingPickups.length === 0) return null;
+              return (
+                <button
+                  onClick={() => setViewState('HISTORY')}
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 p-5 rounded-2xl shadow-xl text-left active:scale-[0.98] transition-transform group relative overflow-hidden"
+                >
+                  {/* Animated background */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 animate-shimmer" />
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-active:scale-90 transition-transform">
+                      <Package className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-black text-white">Pending Pickups</h2>
+                        <span className="bg-white text-amber-600 text-xs font-black px-2 py-0.5 rounded-full">
+                          {pendingPickups.length}
+                        </span>
+                      </div>
+                      <p className="text-white/70 text-sm mt-0.5">View your QR codes for pickup</p>
+                    </div>
+                    <ChevronRight className="w-6 h-6 text-white/70" />
+                  </div>
+                </button>
+              );
+            })()}
+
             {/* Shop In-Store */}
             <button
               onClick={() => setViewState('BRANCH_SELECT')}

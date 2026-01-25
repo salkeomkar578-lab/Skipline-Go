@@ -97,57 +97,99 @@ export const decodePreorderQR = (qrData: string): {
 };
 
 export const PreorderQRCode: React.FC<PreorderQRCodeProps> = ({ transaction, size = 200, showAnimation = true }) => {
-  const [isGenerating, setIsGenerating] = useState(showAnimation);
-  const [showQR, setShowQR] = useState(!showAnimation);
+  const [animationPhase, setAnimationPhase] = useState<'cube' | 'building' | 'ready' | 'done'>(showAnimation ? 'cube' : 'done');
   const qrData = generatePreorderQRData(transaction);
   
-  // QR Generation Animation
+  // 3D QR Generation Animation Sequence
   useEffect(() => {
     if (showAnimation) {
-      const timer1 = setTimeout(() => {
-        setIsGenerating(false);
-      }, 1500);
-      
-      const timer2 = setTimeout(() => {
-        setShowQR(true);
-      }, 1700);
+      // Phase 1: 3D Cube spinning (1.5s)
+      const timer1 = setTimeout(() => setAnimationPhase('building'), 1500);
+      // Phase 2: QR Building animation (1s)
+      const timer2 = setTimeout(() => setAnimationPhase('ready'), 2500);
+      // Phase 3: Success flash (0.5s)
+      const timer3 = setTimeout(() => setAnimationPhase('done'), 3000);
       
       return () => {
         clearTimeout(timer1);
         clearTimeout(timer2);
+        clearTimeout(timer3);
       };
     }
   }, [showAnimation]);
   
   return (
     <div className="flex flex-col items-center">
-      {/* QR Code with Animation */}
-      <div className="relative">
-        {/* Loading State */}
-        {isGenerating && (
-          <div className="bg-gradient-to-br from-purple-100 to-indigo-100 p-4 rounded-2xl shadow-lg flex flex-col items-center justify-center" style={{ width: size + 32, height: size + 32 }}>
-            <div className="relative">
-              <div className="absolute inset-0 bg-purple-500/20 rounded-full animate-ping" />
-              <Loader2 className="w-12 h-12 text-purple-600 animate-spin" />
+      {/* QR Code with 3D Animation */}
+      <div className="relative" style={{ perspective: '1000px' }}>
+        
+        {/* Phase 1: 3D Spinning Cube */}
+        {animationPhase === 'cube' && (
+          <div 
+            className="flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl shadow-2xl"
+            style={{ width: size + 32, height: size + 32 }}
+          >
+            <div className="qr-cube-container" style={{ width: 80, height: 80 }}>
+              <div className="qr-3d-cube">
+                <div className="cube-face cube-front">📦</div>
+                <div className="cube-face cube-back">🎁</div>
+                <div className="cube-face cube-right">🛒</div>
+                <div className="cube-face cube-left">✨</div>
+                <div className="cube-face cube-top">🔐</div>
+                <div className="cube-face cube-bottom">📱</div>
+              </div>
             </div>
-            <p className="mt-3 text-purple-700 font-bold text-sm animate-pulse">Generating QR...</p>
+            <p className="mt-4 text-purple-300 font-bold text-sm animate-pulse">Securing your order...</p>
+            <div className="flex gap-1 mt-2">
+              <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}} />
+              <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}} />
+              <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}} />
+            </div>
           </div>
         )}
         
-        {/* Success Animation */}
-        {!isGenerating && !showQR && (
-          <div className="bg-gradient-to-br from-emerald-100 to-green-100 p-4 rounded-2xl shadow-lg flex flex-col items-center justify-center" style={{ width: size + 32, height: size + 32 }}>
+        {/* Phase 2: QR Code Building Animation */}
+        {animationPhase === 'building' && (
+          <div 
+            className="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl shadow-lg overflow-hidden"
+            style={{ width: size + 32, height: size + 32 }}
+          >
             <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500/30 rounded-full animate-ping" />
-              <CheckCircle className="w-12 h-12 text-emerald-600" />
+              <div className="qr-grid-build" style={{ width: size, height: size }}>
+                {Array.from({length: 64}).map((_, i) => (
+                  <div 
+                    key={i}
+                    className="qr-cell-build"
+                    style={{ 
+                      animationDelay: `${i * 15}ms`,
+                      backgroundColor: Math.random() > 0.5 ? '#1e1b4b' : 'transparent'
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="absolute inset-0 qr-scan-line" />
             </div>
-            <p className="mt-3 text-emerald-700 font-bold text-sm">QR Ready!</p>
+            <p className="mt-3 text-indigo-700 font-bold text-sm">Building QR Code...</p>
           </div>
         )}
         
-        {/* QR Code */}
-        {showQR && (
-          <div className={`bg-white p-4 rounded-2xl shadow-lg transition-all duration-500 ${showAnimation ? 'animate-fadeInScale' : ''}`}>
+        {/* Phase 3: Success Flash */}
+        {animationPhase === 'ready' && (
+          <div 
+            className="flex flex-col items-center justify-center bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl shadow-2xl"
+            style={{ width: size + 32, height: size + 32 }}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-white/50 rounded-full animate-ping" style={{width: 80, height: 80}} />
+              <CheckCircle className="w-20 h-20 text-white drop-shadow-lg" />
+            </div>
+            <p className="mt-3 text-white font-black text-lg">QR Ready!</p>
+          </div>
+        )}
+        
+        {/* Final: QR Code Revealed */}
+        {animationPhase === 'done' && (
+          <div className={`bg-white p-4 rounded-2xl shadow-xl ${showAnimation ? 'qr-reveal-3d' : ''}`}>
             <QRCodeSVG
               value={qrData}
               size={size}
