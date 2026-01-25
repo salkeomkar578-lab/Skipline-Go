@@ -27,7 +27,11 @@ import {
   getAllTransactions,
   getTransactionById
 } from '../services/transactionStore';
-import { saveScannedProduct, saveTransactionToFirebase } from '../services/firebaseService';
+import { 
+  saveScannedProduct, 
+  saveTransactionToFirebase,
+  subscribeToTransactionNotification 
+} from '../services/firebaseService';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
 
@@ -448,77 +452,65 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     return () => window.removeEventListener('storage', handleStorage);
   }, [userId, viewState]);
   
-  // Listen for QR verification events (staff releases gate)
+  // Listen for QR verification events (staff releases gate) - Firebase real-time
   useEffect(() => {
-    const checkQRVerification = () => {
-      if (completedTransaction) {
-        const storedData = localStorage.getItem(`qr_verified_${completedTransaction.id}`);
-        if (storedData) {
-          try {
-            const data = JSON.parse(storedData);
-            // Immediately remove to prevent duplicate processing
-            localStorage.removeItem(`qr_verified_${completedTransaction.id}`);
-            
-            setQrVerifiedNotification({
-              show: true,
-              message: data.message || 'Your QR code has been verified!',
-              type: data.type || 'success'
-            });
-            
-            // Auto redirect after showing notification
-            if (data.type === 'success') {
-              // Redirect to home after 3 seconds
-              setTimeout(() => {
-                setQrVerifiedNotification({ show: false, message: '', type: 'success' });
-                setCompletedTransaction(null);
-                setCart([]);
-                setViewState('MODE_SELECT');
-              }, 3000);
-            } else {
-              // For flagged, just hide notification after 6 seconds
-              setTimeout(() => {
-                setQrVerifiedNotification({ show: false, message: '', type: 'success' });
-              }, 6000);
-            }
-          } catch (e) {
-            console.error('Failed to parse verification data:', e);
-          }
-        }
-      }
-    };
+    if (!completedTransaction) return;
     
-    // Check more frequently for faster response
-    const interval = setInterval(checkQRVerification, 500);
-    return () => clearInterval(interval);
+    console.log('🔔 Setting up Firebase notification listener for transaction:', completedTransaction.id);
+    
+    // Subscribe to Firebase notification updates
+    const unsubscribe = subscribeToTransactionNotification(completedTransaction.id, (notification) => {
+      if (!notification) return;
+      
+      console.log('✅ Received notification from Firebase:', notification);
+      
+      const notificationType = notification.type === 'gate_released' ? 'success' : 
+                               notification.type === 'flagged' ? 'flagged' : 'success';
+      
+      setQrVerifiedNotification({
+        show: true,
+        message: notification.message || 'Your QR code has been verified!',
+        type: notificationType
+      });
+      
+      // Auto redirect after showing notification
+      if (notificationType === 'success') {
+        // Redirect to home after 3 seconds
+        setTimeout(() => {
+          setQrVerifiedNotification({ show: false, message: '', type: 'success' });
+          setCompletedTransaction(null);
+          setCart([]);
+          setViewState('MODE_SELECT');
+        }, 3000);
+      } else {
+        // For flagged, just hide notification after 6 seconds
+        setTimeout(() => {
+          setQrVerifiedNotification({ show: false, message: '', type: 'success' });
+        }, 6000);
+      }
+    });
+    
+    return () => unsubscribe();
   }, [completedTransaction]);
 
-  // Listen for PREORDER pickup verification from staff
+  // Listen for PREORDER pickup verification from staff - Firebase real-time
   useEffect(() => {
     if (!preorderTransaction || viewState !== 'PREORDER_QR') return;
     
-    const checkPreorderPickup = () => {
-      // Check localStorage for verification signal from staff
-      const storedData = localStorage.getItem(`preorder_verified_${preorderTransaction.id}`);
-      if (storedData) {
-        try {
-          const data = JSON.parse(storedData);
-          console.log('✅ Preorder pickup verified by staff:', data);
-          
-          // Remove the signal to prevent duplicate processing
-          localStorage.removeItem(`preorder_verified_${preorderTransaction.id}`);
-          
-          // Show pickup confirmed state
-          setPickupConfirmed(true);
-          setPickupCountdown(5);
-        } catch (e) {
-          console.error('Failed to parse preorder verification:', e);
-        }
-      }
-    };
+    console.log('🔔 Setting up Firebase notification listener for preorder:', preorderTransaction.id);
     
-    // Poll every 500ms for quick response
-    const interval = setInterval(checkPreorderPickup, 500);
-    return () => clearInterval(interval);
+    // Subscribe to Firebase notification updates
+    const unsubscribe = subscribeToTransactionNotification(preorderTransaction.id, (notification) => {
+      if (!notification) return;
+      
+      console.log('✅ Preorder pickup verified by staff via Firebase:', notification);
+      
+      // Show pickup confirmed state
+      setPickupConfirmed(true);
+      setPickupCountdown(5);
+    });
+    
+    return () => unsubscribe();
   }, [preorderTransaction, viewState]);
 
   // Countdown timer when pickup is confirmed

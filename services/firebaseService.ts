@@ -613,3 +613,111 @@ export const getDashboardStats = async (): Promise<{
     };
   }
 };
+
+// ==================== NOTIFICATION SYSTEM ====================
+// Real-time notifications for cross-device communication
+
+/**
+ * Send verification notification to customer
+ * This allows staff on Device A to notify customer on Device B
+ */
+export const sendVerificationNotification = async (
+  transactionId: string,
+  notificationType: 'gate_released' | 'flagged' | 'preorder_collected',
+  message: string
+): Promise<void> => {
+  // Always save to localStorage for same-device scenarios
+  const localKey = notificationType === 'preorder_collected' 
+    ? `preorder_verified_${transactionId}`
+    : `qr_verified_${transactionId}`;
+    
+  localStorage.setItem(localKey, JSON.stringify({
+    type: notificationType === 'flagged' ? 'flagged' : 'success',
+    message,
+    timestamp: Date.now()
+  }));
+  
+  if (isDemoMode || !db) {
+    console.log('📢 Notification saved locally (demo mode):', transactionId);
+    return;
+  }
+  
+  try {
+    // Update the transaction document with notification data
+    const docRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
+    await updateDoc(docRef, {
+      notification: {
+        type: notificationType,
+        message,
+        timestamp: serverTimestamp(),
+        read: false
+      }
+    });
+    console.log('📢 Notification sent via Firebase:', transactionId, notificationType);
+  } catch (error) {
+    console.error('Error sending notification:', error);
+  }
+};
+
+/**
+ * Subscribe to transaction notification updates
+ * Customer uses this to listen for verification from staff
+ */
+export const subscribeToTransactionNotification = (
+  transactionId: string,
+  callback: (notification: { type: string; message: string } | null) => void
+): (() => void) => {
+  // In demo mode, use localStorage polling
+  if (isDemoMode || !db) {
+    console.log('📡 Using localStorage polling for notifications (demo mode)');
+    const interval = setInterval(() => {
+      // Check both notification types
+      const qrData = localStorage.getItem(`qr_verified_${transactionId}`);
+      const preorderData = localStorage.getItem(`preorder_verified_${transactionId}`);
+      
+      if (qrData) {
+        try {
+          const data = JSON.parse(qrData);
+          localStorage.removeItem(`qr_verified_${transactionId}`);
+          callback(data);
+        } catch (e) {
+          console.error('Parse error:', e);
+        }
+      }
+      
+      if (preorderData) {
+        try {
+          const data = JSON.parse(preorderData);
+          localStorage.removeItem(`preorder_verified_${transactionId}`);
+          callback(data);
+        } catch (e) {
+          console.error('Parse error:', e);
+        }
+      }
+    }, 500);
+    
+    return () => clearInterval(interval);
+  }
+  
+  console.log('📡 Subscribing to Firebase notification for:', transactionId);
+  
+  const docRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
+  
+  return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      if (data.notification && !data.notification.read) {
+        console.log('📬 Notification received:', data.notification);
+        callback({
+          type: data.notification.type === 'flagged' ? 'flagged' : 'success',
+          message: data.notification.message
+        });
+        
+        // Mark as read
+        updateDoc(docRef, { 'notification.read': true }).catch(console.error);
+      }
+    }
+  }, (error) => {
+    console.error('Notification subscription error:', error);
+  });
+};

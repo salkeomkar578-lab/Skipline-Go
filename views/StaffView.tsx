@@ -31,7 +31,8 @@ import {
 } from '../services/transactionStore';
 import { 
   subscribeToTransactions as subscribeToFirebaseTransactions,
-  updateTransactionStatus as updateFirebaseTransactionStatus 
+  updateTransactionStatus as updateFirebaseTransactionStatus,
+  sendVerificationNotification
 } from '../services/firebaseService';
 import { CURRENCY_SYMBOL } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
@@ -198,12 +199,9 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
       // IMPORTANT: Expire the QR code so it cannot be reused
       expireTransactionQR(txId);
       
-      // Send verification notification to customer view via localStorage
-      localStorage.setItem(`qr_verified_${txId}`, JSON.stringify({
-        type: 'success',
-        message: t.staff.gateReleased,
-        timestamp: Date.now()
-      }));
+      // Send verification notification to customer via Firebase (works across devices)
+      await sendVerificationNotification(txId, 'gate_released', t.staff.gateReleased);
+      console.log('📢 Gate release notification sent to customer');
       
       // Show success feedback
       setGateReleaseSuccess(true);
@@ -226,12 +224,9 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
       // Also expire QR when flagged
       expireTransactionQR(txId);
       
-      // Send flagged notification to customer view via localStorage
-      localStorage.setItem(`qr_verified_${txId}`, JSON.stringify({
-        type: 'flagged',
-        message: t.staff.customerFlagged,
-        timestamp: Date.now()
-      }));
+      // Send flagged notification to customer via Firebase (works across devices)
+      await sendVerificationNotification(txId, 'flagged', t.staff.customerFlagged);
+      console.log('📢 Flagged notification sent to customer');
     }
     resetScanner();
   };
@@ -1058,14 +1053,9 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
                     // Mark as collected - updates both local storage AND Firebase
                     await updateFirebaseTransactionStatus(tx.id, 'PREORDER_COLLECTED', 'STAFF-001');
                     
-                    // Send notification to customer that order is collected
-                    const notificationKey = `preorder_verified_${tx.id}`;
-                    console.log('📢 Sending pickup notification:', notificationKey);
-                    localStorage.setItem(notificationKey, JSON.stringify({
-                      type: 'success',
-                      message: 'Order collected successfully!',
-                      timestamp: Date.now()
-                    }));
+                    // Send notification to customer via Firebase (works across devices)
+                    await sendVerificationNotification(tx.id, 'preorder_collected', 'Order collected successfully!');
+                    console.log('📢 Preorder pickup notification sent to customer');
                     
                     setPreorderVerification({ 
                       status: 'FOUND', 
