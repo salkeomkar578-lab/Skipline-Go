@@ -78,9 +78,19 @@ export const updateTransactionStatus = (
       auditNotes
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+    
+    // Dispatch storage event for cross-tab synchronization
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: STORAGE_KEY,
+      newValue: JSON.stringify(transactions),
+      url: window.location.href
+    }));
+    
+    console.log(`✅ Transaction ${txId} status updated to ${status}`);
     notifyListeners();
     return true;
   }
+  console.warn(`⚠️ Transaction ${txId} not found for status update`);
   return false;
 };
 

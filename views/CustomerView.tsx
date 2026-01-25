@@ -441,6 +441,9 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
 
   // History tab state (must be at top level for React hooks rules)
   const [historyTab, setHistoryTab] = useState<'ONLINE' | 'OFFLINE'>('OFFLINE');
+  
+  // Force refresh counter for History view (incremented when verification detected)
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   // Load transaction history
   useEffect(() => {
@@ -597,6 +600,9 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       if (hasUpdates) {
         setTransactionHistory(updatedHistory);
         
+        // Force refresh the History view to show updated sections
+        setHistoryRefreshKey(prev => prev + 1);
+        
         // Show verification popup notification
         if (verifiedOrder) {
           setVerificationPopup({
@@ -624,7 +630,19 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     // Check every 1 second for updates
     const interval = setInterval(checkForUpdates, 1000);
     
-    return () => clearInterval(interval);
+    // Also listen for storage events (cross-tab sync)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'skipline_transactions') {
+        console.log('🔔 Storage event detected - checking for updates');
+        checkForUpdates();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [transactionHistory, viewingPreorder]);
 
   // Countdown timer when pickup is confirmed
@@ -2100,7 +2118,8 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   // HISTORY VIEW with Separate Online/Offline Tabs
   // ============================================
   if (viewState === 'HISTORY') {
-    // Force reload from storage to get latest data
+    // Force reload from storage to get latest data (historyRefreshKey triggers re-fetch)
+    console.log('📊 History refresh key:', historyRefreshKey);
     const latestHistory = getAllTransactions().filter(t => t.userId === userId);
     const onlineOrders = latestHistory.filter(tx => tx.isPreorder === true || tx.orderType === 'ONLINE');
     const offlineOrders = latestHistory.filter(tx => tx.isPreorder !== true && tx.orderType !== 'ONLINE');
