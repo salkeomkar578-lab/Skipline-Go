@@ -3,7 +3,7 @@
  * Allows users to switch between English, Marathi, and Hindi
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Globe, Check, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { Language } from '../services/languageService';
@@ -11,6 +11,7 @@ import { Language } from '../services/languageService';
 interface LanguageSelectorProps {
   variant?: 'light' | 'dark';
   showLabel?: boolean;
+  openDirection?: 'up' | 'down' | 'auto';
 }
 
 const languages: { code: Language; name: string; nativeName: string; flag: string }[] = [
@@ -21,10 +22,31 @@ const languages: { code: Language; name: string; nativeName: string; flag: strin
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ 
   variant = 'light',
-  showLabel = true 
+  showLabel = true,
+  openDirection = 'auto'
 }) => {
   const { language, setLanguage, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const [shouldOpenUp, setShouldOpenUp] = useState(true);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Detect if dropdown should open up or down based on available space
+  useEffect(() => {
+    if (openDirection !== 'auto') {
+      setShouldOpenUp(openDirection === 'up');
+      return;
+    }
+    
+    if (buttonRef.current && isOpen) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const dropdownHeight = 220; // Approximate dropdown height
+      
+      // Open upward if not enough space below but enough above
+      setShouldOpenUp(spaceBelow < dropdownHeight && spaceAbove > dropdownHeight);
+    }
+  }, [isOpen, openDirection]);
 
   const currentLang = languages.find(l => l.code === language) || languages[0];
 
@@ -48,6 +70,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${baseClasses}`}
       >
@@ -66,8 +89,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             onClick={() => setIsOpen(false)}
           />
           
-          {/* Dropdown - Opens upward */}
-          <div className={`absolute right-0 bottom-full mb-2 w-48 rounded-xl border overflow-hidden z-50 ${dropdownClasses}`}>
+          {/* Dropdown - Opens up or down based on available space */}
+          <div className={`absolute right-0 w-48 rounded-xl border overflow-hidden z-50 ${dropdownClasses} ${
+            shouldOpenUp ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}>
             <div className={`px-3 py-2 border-b ${variant === 'dark' ? 'border-slate-700' : 'border-slate-100'}`}>
               <p className={`text-xs font-bold uppercase tracking-wider ${variant === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                 {t.language.selectLanguage}

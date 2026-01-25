@@ -294,9 +294,9 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
   };
 
   return (
-    <div className="fixed bottom-32 right-6 z-[60]">
+    <div className="fixed bottom-24 right-4 z-[60] sm:bottom-28 sm:right-6">
       {isOpen ? (
-        <GlassCard className="w-96 h-[560px] flex flex-col p-0 overflow-hidden border-2 border-amber-200 shadow-2xl animate-in slide-in-from-bottom-10">
+        <GlassCard className="w-[calc(100vw-2rem)] sm:w-96 h-[480px] sm:h-[560px] flex flex-col p-0 overflow-hidden border-2 border-amber-200 shadow-2xl animate-in slide-in-from-bottom-10">
           {/* Header with pulse animation */}
           <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-4 flex items-center justify-between text-white relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
@@ -439,20 +439,13 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({
       ) : (
         <button 
           onClick={() => setIsOpen(true)}
-          className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-amber-500/40 hover:scale-110 hover:shadow-amber-500/60 transition-all group relative animate-bounce"
-          style={{ animationDuration: '2s' }}
+          className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-amber-500/40 hover:scale-110 hover:shadow-amber-500/60 transition-all group relative"
         >
-          <div className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
-            <Sparkles className="w-3 h-3 text-white animate-pulse" />
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+            <Sparkles className="w-2.5 h-2.5 text-white animate-pulse" />
           </div>
           <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl" />
-          <Bot className="w-8 h-8 relative z-10" />
-          
-          {/* Tooltip */}
-          <div className="absolute right-full mr-3 bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-            {language === 'mr' ? 'सहायक AI शी चॅट करा' : language === 'hi' ? 'सहायक AI से चैट करें' : 'Chat with Sahayak AI'}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 w-2 h-2 bg-slate-900 rotate-45" />
-          </div>
+          <Bot className="w-7 h-7 relative z-10" />
         </button>
       )}
     </div>

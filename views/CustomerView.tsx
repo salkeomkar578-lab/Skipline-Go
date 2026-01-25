@@ -43,7 +43,7 @@ interface CustomerViewProps {
   onExit?: () => void;
 }
 
-type ViewState = 'MODE_SELECT' | 'BRANCH_SELECT' | 'SHOPPING' | 'CHECKOUT' | 'PAYMENT' | 'EXIT_QR' | 'HISTORY' | 'ONLINE_BROWSE' | 'CITY_SELECT' | 'PREORDER_MALL_SELECT' | 'PREORDER_PAYMENT' | 'PREORDER_QR';
+type ViewState = 'MODE_SELECT' | 'BRANCH_SELECT' | 'SHOPPING' | 'CHECKOUT' | 'PAYMENT' | 'EXIT_QR' | 'HISTORY' | 'ONLINE_BROWSE' | 'CITY_SELECT' | 'PREORDER_MALL_SELECT' | 'PREORDER_PAYMENT' | 'PREORDER_QR' | 'VIEW_PREORDER_QR';
 type PaymentMethod = 'GOOGLE_PAY' | 'UPI' | 'CARD' | 'CASH';
 type AppMode = 'ONLINE' | 'OFFLINE';
 
@@ -405,6 +405,9 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [preorderCart, setPreorderCart] = useState<CartItem[]>([]);
   const [showPreorderModal, setShowPreorderModal] = useState(false);
+  
+  // Saved preorder QR view state
+  const [viewingPreorder, setViewingPreorder] = useState<Transaction | null>(null);
   
   // City/Mall selection for preorder
   const [selectedCity, setSelectedCity] = useState<string>('');
@@ -2111,10 +2114,147 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                     <Download className="w-4 h-4" />
                     {t.customer.downloadInvoice}
                   </button>
+                  
+                  {/* View QR Code button for pending preorders */}
+                  {tx.isPreorder && tx.status !== 'PREORDER_COLLECTED' && (
+                    <button
+                      onClick={() => {
+                        setViewingPreorder(tx);
+                        setViewState('VIEW_PREORDER_QR');
+                      }}
+                      className="w-full mt-2 bg-purple-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-purple-700"
+                    >
+                      📱 View QR Code
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           )}
+        </div>
+        
+        <AIChatbot mode="CUSTOMER" isOnline={true} cartItems={[]} cartTotal={0} />
+      </div>
+    );
+  }
+
+  // ============================================
+  // VIEW SAVED PREORDER QR CODE
+  // ============================================
+  if (viewState === 'VIEW_PREORDER_QR' && viewingPreorder) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 safe-area-inset pb-24">
+        <div className="max-w-lg mx-auto p-4 pt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => {
+                setViewingPreorder(null);
+                setViewState('HISTORY');
+              }}
+              className="text-white/80 active:text-white flex items-center gap-1"
+            >
+              ← Back
+            </button>
+            <h1 className="text-lg font-bold text-white">Pickup QR Code</h1>
+            <div className="w-12" />
+          </div>
+          
+          {/* Order Info */}
+          <div className="text-center mb-4">
+            <p className="text-white/70 text-sm">Order #{viewingPreorder.id}</p>
+            <p className="text-white/50 text-xs mt-1">
+              {new Date(viewingPreorder.timestamp).toLocaleDateString('en-IN', {
+                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+              })}
+            </p>
+          </div>
+          
+          {/* Status Badge */}
+          <div className={`mx-auto w-fit mb-4 px-4 py-2 rounded-full font-bold text-sm ${
+            viewingPreorder.status === 'PREORDER_COLLECTED' 
+              ? 'bg-emerald-500/20 text-emerald-300' 
+              : 'bg-amber-500/20 text-amber-300'
+          }`}>
+            {viewingPreorder.status === 'PREORDER_COLLECTED' ? '✅ Collected' : '⏳ Awaiting Pickup'}
+          </div>
+          
+          {/* QR Code Card */}
+          <div className="bg-white rounded-3xl p-6 shadow-2xl mb-4">
+            <PreorderQRCode 
+              transaction={{
+                ...viewingPreorder,
+                preorderPickupCode: viewingPreorder.preorderPickupCode || '',
+                preorderMall: viewingPreorder.preorderMall || viewingPreorder.branch || ''
+              } as Transaction} 
+              size={200}
+              showAnimation={false}
+            />
+          </div>
+          
+          {/* Pickup Location */}
+          {viewingPreorder.preorderMall && (
+            <div className="bg-white/10 backdrop-blur rounded-2xl p-4 mb-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-white font-bold text-sm">Pickup Location</p>
+                <p className="text-white/70 text-xs">{viewingPreorder.preorderMall}</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Items Summary */}
+          <div className="bg-white/10 backdrop-blur rounded-2xl p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-white font-bold text-sm">Order Items</p>
+              <p className="text-purple-300 font-bold">₹{viewingPreorder.total.toFixed(0)}</p>
+            </div>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {viewingPreorder.items?.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-white/80 text-sm">
+                  <span>{item.icon || '📦'}</span>
+                  <span className="flex-1 truncate">{item.name}</span>
+                  <span className="text-white/50">×{item.quantity}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                const code = viewingPreorder.preorderPickupCode || '';
+                navigator.clipboard.writeText(code).then(() => {
+                  setCopySuccess(true);
+                  setTimeout(() => setCopySuccess(false), 2000);
+                });
+              }}
+              className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+                copySuccess 
+                  ? 'bg-emerald-500 text-white' 
+                  : 'bg-white text-purple-600'
+              }`}
+            >
+              {copySuccess ? (
+                <><CheckCircle className="w-5 h-5" /> Code Copied!</>
+              ) : (
+                <><Copy className="w-5 h-5" /> Copy Pickup Code</>
+              )}
+            </button>
+            
+            <button
+              onClick={() => {
+                setViewingPreorder(null);
+                setViewState('HISTORY');
+              }}
+              className="w-full bg-white/10 text-white py-4 rounded-xl font-bold"
+            >
+              Back to Orders
+            </button>
+          </div>
         </div>
         
         <AIChatbot mode="CUSTOMER" isOnline={true} cartItems={[]} cartTotal={0} />
