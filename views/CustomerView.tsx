@@ -431,6 +431,13 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   // Preorder pickup confirmed state
   const [pickupConfirmed, setPickupConfirmed] = useState(false);
   const [pickupCountdown, setPickupCountdown] = useState(5);
+  
+  // Verification notification popup (real-time)
+  const [verificationPopup, setVerificationPopup] = useState<{
+    show: boolean;
+    orderId: string;
+    pickupCode: string;
+  }>({ show: false, orderId: '', pickupCode: '' });
 
   // History tab state (must be at top level for React hooks rules)
   const [historyTab, setHistoryTab] = useState<'ONLINE' | 'OFFLINE'>('OFFLINE');
@@ -572,13 +579,16 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       
       // Check if any pending preorder in our history has been collected
       let hasUpdates = false;
+      let verifiedOrder: Transaction | null = null;
+      
       const updatedHistory = transactionHistory.map(tx => {
         if (tx.isPreorder && tx.status !== 'PREORDER_COLLECTED') {
           const latestTx = allTx.find(t => t.id === tx.id);
           if (latestTx && latestTx.status === 'PREORDER_COLLECTED') {
             console.log('🔄 Transaction status updated from localStorage:', tx.id);
             hasUpdates = true;
-            return { ...tx, status: 'PREORDER_COLLECTED' };
+            verifiedOrder = { ...tx, status: 'PREORDER_COLLECTED' };
+            return verifiedOrder;
           }
         }
         return tx;
@@ -586,6 +596,20 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       
       if (hasUpdates) {
         setTransactionHistory(updatedHistory);
+        
+        // Show verification popup notification
+        if (verifiedOrder) {
+          setVerificationPopup({
+            show: true,
+            orderId: (verifiedOrder as Transaction).id,
+            pickupCode: (verifiedOrder as Transaction).preorderPickupCode || ''
+          });
+          
+          // Auto-hide popup after 5 seconds
+          setTimeout(() => {
+            setVerificationPopup({ show: false, orderId: '', pickupCode: '' });
+          }, 5000);
+        }
         
         // Also update viewingPreorder if it was just verified
         if (viewingPreorder && viewingPreorder.status !== 'PREORDER_COLLECTED') {
@@ -2080,10 +2104,38 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     const latestHistory = getAllTransactions().filter(t => t.userId === userId);
     const onlineOrders = latestHistory.filter(tx => tx.isPreorder === true || tx.orderType === 'ONLINE');
     const offlineOrders = latestHistory.filter(tx => tx.isPreorder !== true && tx.orderType !== 'ONLINE');
+    
+    // Separate pending and verified preorders
+    const pendingPreorders = onlineOrders.filter(tx => tx.status !== 'PREORDER_COLLECTED');
+    const verifiedPreorders = onlineOrders.filter(tx => tx.status === 'PREORDER_COLLECTED');
+    
     const displayOrders = historyTab === 'ONLINE' ? onlineOrders : offlineOrders;
     
     return (
       <div className="min-h-screen bg-slate-900 safe-area-inset">
+        {/* Verification Popup Notification */}
+        {verificationPopup.show && (
+          <div className="fixed top-4 left-4 right-4 z-50 animate-bounce">
+            <div className="max-w-lg mx-auto bg-gradient-to-r from-emerald-500 to-green-500 rounded-2xl p-4 shadow-2xl border-2 border-emerald-300">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+                  <ShieldCheck className="w-7 h-7 text-emerald-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-black text-lg">✅ Order Verified!</p>
+                  <p className="text-white/80 text-sm">Code: {verificationPopup.pickupCode}</p>
+                </div>
+                <button 
+                  onClick={() => setVerificationPopup({ show: false, orderId: '', pickupCode: '' })}
+                  className="text-white/80 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="bg-slate-800 border-b border-slate-700 px-4 py-4">
           <div className="max-w-lg mx-auto flex items-center justify-between">
             <button onClick={() => setViewState('MODE_SELECT')} className="text-slate-400 active:text-white">
@@ -2137,144 +2189,267 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </button>
           </div>
 
-          {displayOrders.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                {historyTab === 'ONLINE' ? (
-                  <Globe className="w-10 h-10 text-slate-600" />
-                ) : (
-                  <Receipt className="w-10 h-10 text-slate-600" />
-                )}
-              </div>
-              <h3 className="text-white font-bold text-lg">
-                {historyTab === 'ONLINE' ? 'No preorders yet' : t.customer.noOrdersYet}
-              </h3>
-              <p className="text-slate-500 text-sm mt-1">
-                {historyTab === 'ONLINE' 
-                  ? 'Your preorder pickups will appear here' 
-                  : t.customer.startShoppingHistory}
-              </p>
-              <button
-                onClick={() => setViewState(historyTab === 'ONLINE' ? 'CITY_SELECT' : 'BRANCH_SELECT')}
-                className={`mt-6 px-6 py-3 rounded-xl font-bold ${
-                  historyTab === 'ONLINE' 
-                    ? 'bg-purple-500 text-white' 
-                    : 'bg-amber-500 text-white'
-                }`}
-              >
-                {historyTab === 'ONLINE' ? 'Start Preorder' : t.customer.startShopping}
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {displayOrders.map(tx => (
-                <div key={tx.id} className={`rounded-xl p-4 border ${
-                  tx.isPreorder 
-                    ? 'bg-purple-900/20 border-purple-500/30' 
-                    : 'bg-slate-800 border-slate-700'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500 font-mono">{tx.id}</span>
-                      {tx.isPreorder && (
-                        <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">
-                          Pickup
-                        </span>
-                      )}
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-                      tx.status === 'VERIFIED' || tx.status === 'PREORDER_COLLECTED' ? 'bg-emerald-500/20 text-emerald-400' :
-                      tx.status === 'PAID' || tx.status === 'PREORDER_PENDING' ? 'bg-blue-500/20 text-blue-400' :
-                      tx.status === 'PREORDER_READY' ? 'bg-amber-500/20 text-amber-400' :
-                      'bg-amber-500/20 text-amber-400'
-                    }`}>
-                      {tx.status === 'PREORDER_PENDING' ? 'Awaiting Pickup' :
-                       tx.status === 'PREORDER_READY' ? 'Ready for Pickup' :
-                       tx.status === 'PREORDER_COLLECTED' ? 'Collected' :
-                       t.status[tx.status.toLowerCase() as keyof typeof t.status] || tx.status}
-                    </span>
+          {/* ONLINE TAB - Show Pending & Verified Sections Separately */}
+          {historyTab === 'ONLINE' && (
+            <>
+              {/* PENDING PICKUPS SECTION */}
+              {pendingPreorders.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 bg-amber-500 rounded-full animate-pulse" />
+                    <h2 className="text-amber-400 font-bold text-sm uppercase tracking-wider">
+                      Pending Pickups ({pendingPreorders.length})
+                    </h2>
                   </div>
-                  
-                  {/* Preorder: Show pickup info */}
-                  {tx.isPreorder && tx.preorderPickupCode && (
-                    <div className="bg-purple-500/10 rounded-lg p-3 mb-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-purple-400 text-xs">Pickup Code</span>
-                        <span className="text-white font-mono font-bold">{tx.preorderPickupCode}</span>
+                  <div className="space-y-3">
+                    {pendingPreorders.map(tx => (
+                      <div key={tx.id} className="bg-purple-900/30 border-2 border-amber-500/50 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-500 font-mono">{tx.id}</span>
+                            <span className="text-xs bg-amber-500/30 text-amber-400 px-2 py-0.5 rounded-full font-bold">
+                              ⏳ Awaiting
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Pickup Code */}
+                        {tx.preorderPickupCode && (
+                          <div className="bg-purple-500/20 rounded-lg p-3 mb-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-purple-400 text-xs">Pickup Code</span>
+                              <span className="text-white font-mono font-bold text-lg">{tx.preorderPickupCode}</span>
+                            </div>
+                            {tx.preorderMall && (
+                              <div className="flex items-center gap-1 mt-1 text-slate-400 text-xs">
+                                <MapPin className="w-3 h-3" />
+                                {tx.preorderMall}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Items preview */}
+                        {tx.items && tx.items.length > 0 && (
+                          <div className="flex gap-1 mb-3 overflow-x-auto">
+                            {tx.items.slice(0, 5).map((item, idx) => (
+                              <div key={idx} className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-lg flex-shrink-0">
+                                {item.icon || '📦'}
+                              </div>
+                            ))}
+                            {tx.items.length > 5 && (
+                              <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-xs text-slate-400 flex-shrink-0">
+                                +{tx.items.length - 5}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="font-bold text-white">{tx.items?.length || 0} items</p>
+                            <p className="text-slate-500 text-sm">
+                              {new Date(tx.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                          <p className="text-2xl font-black text-white">₹{tx.total.toFixed(0)}</p>
+                        </div>
+                        
+                        {/* View QR Code Button */}
+                        <button
+                          onClick={() => {
+                            const latestTx = getTransactionById(tx.id);
+                            const currentTx = latestTx || tx;
+                            setViewingPreorder(currentTx);
+                            setViewState('VIEW_PREORDER_QR');
+                          }}
+                          className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                        >
+                          📱 Generate/View QR Code
+                        </button>
                       </div>
-                      {tx.preorderMall && (
-                        <div className="flex items-center gap-1 mt-1 text-slate-400 text-xs">
-                          <MapPin className="w-3 h-3" />
-                          {tx.preorderMall}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Items preview */}
-                  {tx.items && tx.items.length > 0 && (
-                    <div className="flex gap-1 mb-3 overflow-x-auto">
-                      {tx.items.slice(0, 5).map((item, idx) => (
-                        <div key={idx} className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-lg flex-shrink-0">
-                          {item.icon || '📦'}
-                        </div>
-                      ))}
-                      {tx.items.length > 5 && (
-                        <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-xs text-slate-400 flex-shrink-0">
-                          +{tx.items.length - 5}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="font-bold text-white">{tx.items?.length || 0} {t.customer.items}</p>
-                      <p className="text-slate-500 text-sm">
-                        {new Date(tx.timestamp).toLocaleDateString(localeMap[language] || 'en-IN', { 
-                          day: 'numeric', month: 'short', year: 'numeric' 
-                        })}
-                      </p>
-                    </div>
-                    <p className="text-2xl font-black text-white">₹{tx.total.toFixed(0)}</p>
+                    ))}
                   </div>
-                  
-                  <button
-                    onClick={() => downloadInvoice(tx, (tx as any).branch || selectedBranch.name, t.pdf, localeMap[language] || 'en-IN')}
-                    className="w-full mt-2 bg-slate-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-slate-600"
-                  >
-                    <Download className="w-4 h-4" />
-                    {t.customer.downloadInvoice}
-                  </button>
-                  
-                  {/* View QR Code button for pending preorders */}
-                  {tx.isPreorder && tx.status !== 'PREORDER_COLLECTED' && (
-                    <button
-                      onClick={() => {
-                        // Check latest status from localStorage before showing
-                        const latestTx = getTransactionById(tx.id);
-                        const currentTx = latestTx || tx;
-                        setViewingPreorder(currentTx);
-                        setViewState('VIEW_PREORDER_QR');
-                      }}
-                      className="w-full mt-2 bg-purple-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-purple-700"
-                    >
-                      📱 View QR Code
-                    </button>
-                  )}
-                  
-                  {/* Show Verified badge for collected preorders */}
-                  {tx.isPreorder && tx.status === 'PREORDER_COLLECTED' && (
-                    <div className="mt-2 bg-emerald-100 border border-emerald-300 rounded-xl p-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                        <span className="font-bold text-emerald-700">✅ Verified & Collected</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              ))}
-            </div>
+              )}
+              
+              {/* VERIFIED ORDERS SECTION */}
+              {verifiedPreorders.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <h2 className="text-emerald-400 font-bold text-sm uppercase tracking-wider">
+                      Verified & Collected ({verifiedPreorders.length})
+                    </h2>
+                  </div>
+                  <div className="space-y-3">
+                    {verifiedPreorders.map(tx => (
+                      <div key={tx.id} className="bg-emerald-900/20 border border-emerald-500/30 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-500 font-mono">{tx.id}</span>
+                            <span className="text-xs bg-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded-full font-bold">
+                              ✅ Collected
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Pickup Code - Strikethrough */}
+                        {tx.preorderPickupCode && (
+                          <div className="bg-emerald-500/10 rounded-lg p-3 mb-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-emerald-400 text-xs">Pickup Code</span>
+                              <span className="text-emerald-400 font-mono font-bold line-through opacity-60">{tx.preorderPickupCode}</span>
+                            </div>
+                            {tx.preorderMall && (
+                              <div className="flex items-center gap-1 mt-1 text-slate-400 text-xs">
+                                <MapPin className="w-3 h-3" />
+                                {tx.preorderMall}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Items preview */}
+                        {tx.items && tx.items.length > 0 && (
+                          <div className="flex gap-1 mb-3 overflow-x-auto">
+                            {tx.items.slice(0, 5).map((item, idx) => (
+                              <div key={idx} className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-lg flex-shrink-0">
+                                {item.icon || '📦'}
+                              </div>
+                            ))}
+                            {tx.items.length > 5 && (
+                              <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-xs text-slate-400 flex-shrink-0">
+                                +{tx.items.length - 5}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="font-bold text-white">{tx.items?.length || 0} items</p>
+                            <p className="text-slate-500 text-sm">
+                              {new Date(tx.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                          <p className="text-2xl font-black text-emerald-400">₹{tx.total.toFixed(0)}</p>
+                        </div>
+                        
+                        {/* Verified Badge */}
+                        <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-xl p-3 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                            <span className="font-bold text-emerald-400">Item Verified & Picked Up</span>
+                          </div>
+                          <p className="text-emerald-500/70 text-xs mt-1">QR regeneration disabled</p>
+                        </div>
+                        
+                        {/* Download Invoice */}
+                        <button
+                          onClick={() => downloadInvoice(tx, (tx as any).branch || tx.preorderMall || selectedBranch.name, t.pdf, localeMap[language] || 'en-IN')}
+                          className="w-full mt-3 bg-slate-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-slate-600"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download Invoice
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Empty State for Online Tab */}
+              {onlineOrders.length === 0 && (
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Globe className="w-10 h-10 text-slate-600" />
+                  </div>
+                  <h3 className="text-white font-bold text-lg">No preorders yet</h3>
+                  <p className="text-slate-500 text-sm mt-1">Your preorder pickups will appear here</p>
+                  <button
+                    onClick={() => setViewState('CITY_SELECT')}
+                    className="mt-6 px-6 py-3 rounded-xl font-bold bg-purple-500 text-white"
+                  >
+                    Start Preorder
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* OFFLINE TAB - Show In-Store Orders */}
+          {historyTab === 'OFFLINE' && (
+            <>
+              {offlineOrders.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Receipt className="w-10 h-10 text-slate-600" />
+                  </div>
+                  <h3 className="text-white font-bold text-lg">{t.customer.noOrdersYet}</h3>
+                  <p className="text-slate-500 text-sm mt-1">{t.customer.startShoppingHistory}</p>
+                  <button
+                    onClick={() => setViewState('BRANCH_SELECT')}
+                    className="mt-6 px-6 py-3 rounded-xl font-bold bg-amber-500 text-white"
+                  >
+                    {t.customer.startShopping}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {offlineOrders.map(tx => (
+                    <div key={tx.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs text-slate-500 font-mono">{tx.id}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full font-bold ${
+                          tx.status === 'VERIFIED' ? 'bg-emerald-500/20 text-emerald-400' :
+                          tx.status === 'PAID' ? 'bg-blue-500/20 text-blue-400' :
+                          'bg-amber-500/20 text-amber-400'
+                        }`}>
+                          {t.status[tx.status.toLowerCase() as keyof typeof t.status] || tx.status}
+                        </span>
+                      </div>
+                      
+                      {/* Items preview */}
+                      {tx.items && tx.items.length > 0 && (
+                        <div className="flex gap-1 mb-3 overflow-x-auto">
+                          {tx.items.slice(0, 5).map((item, idx) => (
+                            <div key={idx} className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-lg flex-shrink-0">
+                              {item.icon || '📦'}
+                            </div>
+                          ))}
+                          {tx.items.length > 5 && (
+                            <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-xs text-slate-400 flex-shrink-0">
+                              +{tx.items.length - 5}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="font-bold text-white">{tx.items?.length || 0} {t.customer.items}</p>
+                          <p className="text-slate-500 text-sm">
+                            {new Date(tx.timestamp).toLocaleDateString(localeMap[language] || 'en-IN', { 
+                              day: 'numeric', month: 'short', year: 'numeric' 
+                            })}
+                          </p>
+                        </div>
+                        <p className="text-2xl font-black text-white">₹{tx.total.toFixed(0)}</p>
+                      </div>
+                      
+                      <button
+                        onClick={() => downloadInvoice(tx, (tx as any).branch || selectedBranch.name, t.pdf, localeMap[language] || 'en-IN')}
+                        className="w-full mt-2 bg-slate-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-slate-600"
+                      >
+                        <Download className="w-4 h-4" />
+                        {t.customer.downloadInvoice}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
         
