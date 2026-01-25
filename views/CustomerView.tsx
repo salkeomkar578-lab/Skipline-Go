@@ -684,8 +684,16 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       branch: selectedBranch.name
     };
     
+    // Save to local storage
     saveTransaction(transaction);
-    saveTransactionToFirebase(transaction);
+    
+    // Save to Firebase for cross-device sync
+    try {
+      await saveTransactionToFirebase(transaction);
+      console.log('✅ Transaction saved to Firebase:', transaction.id);
+    } catch (error) {
+      console.error('❌ Firebase save error:', error);
+    }
     
     console.log('✅ Transaction completed:', transaction.id);
     
@@ -1654,14 +1662,20 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   branch: preorderMall?.name
                 };
                 
-                // Save to transaction store immediately
+                // Save to transaction store immediately (local)
                 saveTransaction(preorderTx);
-                saveTransactionToFirebase(preorderTx);
+                
+                // Save to Firebase for cross-device sync
+                try {
+                  await saveTransactionToFirebase(preorderTx);
+                  console.log('✅ Preorder saved to Firebase:', txId, 'Pickup Code:', pickupCode);
+                } catch (error) {
+                  console.error('❌ Firebase save error:', error);
+                }
                 
                 // Verify save worked
                 const verifyTx = getTransactionById(txId);
-                console.log('✅ Preorder saved:', txId, 'Pickup Code:', pickupCode);
-                console.log('📦 Verification:', verifyTx ? 'Transaction found in storage' : '❌ NOT FOUND IN STORAGE');
+                console.log('📦 Local verification:', verifyTx ? 'Transaction found in storage' : '❌ NOT FOUND IN STORAGE');
                 
                 setPreorderTransaction({
                   id: txId,

@@ -479,19 +479,23 @@ export const updateTransactionStatus = async (
 
 /**
  * Real-time listener for transactions (staff dashboard)
+ * This syncs transactions across all devices in real-time
  */
 export const subscribeToTransactions = (
   callback: (transactions: Transaction[]) => void
 ): (() => void) => {
   // In demo mode, use local store subscription
   if (isDemoMode || !db) {
+    console.log('📴 Demo mode - using local storage subscription');
     return transactionStore.subscribeToTransactions(callback);
   }
+  
+  console.log('🔥 Setting up Firebase real-time subscription...');
   
   const q = query(
     collection(db, COLLECTIONS.TRANSACTIONS),
     orderBy('timestamp', 'desc'),
-    limit(20)
+    limit(100) // Increased limit to fetch more transactions
   );
   
   return onSnapshot(q, (snapshot) => {
@@ -499,7 +503,18 @@ export const subscribeToTransactions = (
       id: doc.id,
       ...doc.data()
     } as Transaction));
+    console.log('🔥 Firebase sync: Received', transactions.length, 'transactions');
+    
+    // Also sync to local storage for offline access
+    transactions.forEach(tx => {
+      transactionStore.saveTransaction(tx);
+    });
+    
     callback(transactions);
+  }, (error) => {
+    console.error('🔥 Firebase subscription error:', error);
+    // Fallback to local storage on error
+    callback(transactionStore.getAllTransactions());
   });
 };
 

@@ -24,12 +24,15 @@ import { verifyExitToken } from '../components/ExitQRCode';
 import { 
   getTransactionById, 
   getAllTransactions,
-  updateTransactionStatus,
-  subscribeToTransactions,
+  updateTransactionStatus as updateLocalTransactionStatus,
   getTransactionStats,
   expireTransactionQR,
   isQRExpired
 } from '../services/transactionStore';
+import { 
+  subscribeToTransactions as subscribeToFirebaseTransactions,
+  updateTransactionStatus as updateFirebaseTransactionStatus 
+} from '../services/firebaseService';
 import { CURRENCY_SYMBOL } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
@@ -66,13 +69,18 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
   // History tab state
   const [historyTab, setHistoryTab] = useState<HistoryTab>('OFFLINE');
 
-  // Subscribe to transaction updates
+  // Subscribe to transaction updates from Firebase (real-time sync across devices)
   useEffect(() => {
-    const unsubscribe = subscribeToTransactions((txs) => {
+    console.log('📡 Subscribing to Firebase transactions...');
+    const unsubscribe = subscribeToFirebaseTransactions((txs) => {
+      console.log('📦 Received', txs.length, 'transactions from Firebase');
       setTransactions(txs);
       setStats(getTransactionStats());
     });
-    return () => unsubscribe();
+    return () => {
+      console.log('📡 Unsubscribing from Firebase transactions');
+      unsubscribe();
+    };
   }, []);
 
   // Handle QR scan
@@ -180,12 +188,12 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
   }, []);
 
   // Handle gate release - Also expires the QR code
-  const handleRelease = () => {
+  const handleRelease = async () => {
     if (verification.transaction) {
       const txId = verification.transaction.id;
       
-      // Update transaction status
-      updateTransactionStatus(txId, 'VERIFIED', 'STAFF-001');
+      // Update transaction status - syncs to both local and Firebase
+      await updateFirebaseTransactionStatus(txId, 'VERIFIED', 'STAFF-001');
       
       // IMPORTANT: Expire the QR code so it cannot be reused
       expireTransactionQR(txId);
@@ -209,11 +217,11 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
   };
 
   // Handle flag for audit
-  const handleFlag = () => {
+  const handleFlag = async () => {
     if (verification.transaction) {
       const txId = verification.transaction.id;
       
-      updateTransactionStatus(txId, 'FLAGGED', 'STAFF-001', 'Manual audit required');
+      await updateFirebaseTransactionStatus(txId, 'FLAGGED', 'STAFF-001', 'Manual audit required');
       
       // Also expire QR when flagged
       expireTransactionQR(txId);
@@ -815,12 +823,24 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
                 if (!preorderCode.trim()) return;
                 setPreorderVerification({ status: 'VERIFYING' });
                 
-                // IMPORTANT: Fetch fresh from localStorage to ensure we get the latest data
-                const freshTransactions = getAllTransactions();
-                const freshPreorders = freshTransactions.filter(tx => tx.isPreorder === true);
+                // Use transactions from Firebase real-time subscription (already synced across devices)
+                // Also merge with localStorage for any pending local transactions
+                const localTransactions = getAllTransactions();
+                const allTransactions = [...transactions];
+                
+                // Add any local transactions not already in Firebase sync
+                localTransactions.forEach(localTx => {
+                  if (!allTransactions.find(tx => tx.id === localTx.id)) {
+                    allTransactions.push(localTx);
+                  }
+                });
+                
+                const freshPreorders = allTransactions.filter(tx => tx.isPreorder === true);
                 
                 console.log('🔍 Searching for code:', preorderCode.trim());
-                console.log('📦 Fresh preorders from storage:', freshPreorders.length);
+                console.log('📦 Firebase preorders:', transactions.filter(tx => tx.isPreorder).length);
+                console.log('📦 Local preorders:', localTransactions.filter(tx => tx.isPreorder).length);
+                console.log('📦 Combined preorders:', freshPreorders.length);
                 console.log('📋 All pickup codes:', freshPreorders.map(tx => tx.preorderPickupCode));
                 
                 // Search preorders by pickup code
@@ -847,8 +867,6 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
                 
                 if (found) {
                   console.log('✅ PREORDER found:', found.id, 'Code:', found.preorderPickupCode);
-                  // Update local state with fresh data
-                  setTransactions(freshTransactions);
                   const txWithItems = {
                     ...found,
                     items: found.items ? found.items.map(item => ({...item})) : []
@@ -1036,9 +1054,9 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
             <div className="max-w-lg mx-auto">
               {!isCollected ? (
                 <button
-                  onClick={() => {
-                    // Mark as collected
-                    updateTransactionStatus(tx.id, 'PREORDER_COLLECTED', 'STAFF-001');
+                  onClick={async () => {
+                    // Mark as collected - updates both local storage AND Firebase
+                    await updateFirebaseTransactionStatus(tx.id, 'PREORDER_COLLECTED', 'STAFF-001');
                     
                     // Send notification to customer that order is collected
                     const notificationKey = `preorder_verified_${tx.id}`;
