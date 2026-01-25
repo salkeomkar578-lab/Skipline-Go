@@ -1895,6 +1895,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
           <div className="bg-white rounded-3xl p-6 shadow-2xl mb-4">
             {preorderTransaction && (
               <PreorderQRCode 
+                key={`qr-${preorderTransaction.id}-${preorderTransaction.pickupCode}`}
                 transaction={{
                   ...preorderTransaction,
                   preorderPickupCode: preorderTransaction.pickupCode,
@@ -1902,6 +1903,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                 }} 
                 size={180}
                 isVerified={false}
+                showAnimation={true}
               />
             )}
             
@@ -2300,6 +2302,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
           {!isCollected && (
             <div className="bg-white rounded-3xl p-6 shadow-2xl mb-4">
               <PreorderQRCode 
+                key={`view-qr-${viewingPreorder.id}-${viewingPreorder.preorderPickupCode}`}
                 transaction={{
                   ...viewingPreorder,
                   preorderPickupCode: viewingPreorder.preorderPickupCode || '',

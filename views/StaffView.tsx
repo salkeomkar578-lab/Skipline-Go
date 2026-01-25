@@ -929,8 +929,9 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
               
               <div className="rounded-xl overflow-hidden">
                 <CameraScanner 
-                  onScanSuccess={handlePreorderQRScan} 
-                  onError={(e) => console.error('Preorder QR scan error:', e)}
+                  title="Scan Preorder QR"
+                  onScan={handlePreorderQRScan}
+                  isQR={true}
                 />
               </div>
               
