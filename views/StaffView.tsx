@@ -207,6 +207,9 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
       
       if (decoded.valid && decoded.data) {
         console.log('✅ Valid preorder QR decoded:', decoded.data);
+        if (decoded.expired) {
+          console.log('⚠️ QR is expired but still valid for verification');
+        }
         
         // Search for the transaction in Firebase data
         const allTransactions = [...transactions];
@@ -230,10 +233,45 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
             items: found.items ? found.items.map(item => ({...item})) : []
           };
           setPreorderVerification({ status: 'FOUND', transaction: txWithItems });
+          
+          // Directly show confirmation popup instead of just going to result
+          setPendingCollectTx(txWithItems);
+          setShowConfirmPopup(true);
           setViewMode('PREORDER_RESULT');
           setPreorderScanMode('MANUAL'); // Reset to manual mode
         } else {
           console.log('❌ Transaction not found for QR data:', decoded.data);
+          setPreorderVerification({ status: 'NOT_FOUND' });
+        }
+      } else if (decoded.expired && decoded.data) {
+        // Even if marked invalid due to expiry, still try to find the order
+        console.log('⚠️ QR expired, but checking order anyway:', decoded.data);
+        
+        const allTransactions = [...transactions];
+        const localTxs = getAllTransactions();
+        localTxs.forEach(localTx => {
+          if (!allTransactions.find(tx => tx.id === localTx.id)) {
+            allTransactions.push(localTx);
+          }
+        });
+        
+        let found = allTransactions.find(tx => 
+          tx.id === decoded.data!.txId || 
+          (tx.preorderPickupCode || '').toUpperCase() === (decoded.data!.pickupCode || '').toUpperCase()
+        );
+        
+        if (found) {
+          console.log('✅ PREORDER found (expired QR):', found.id);
+          const txWithItems = {
+            ...found,
+            items: found.items ? found.items.map(item => ({...item})) : []
+          };
+          setPreorderVerification({ status: 'FOUND', transaction: txWithItems });
+          setPendingCollectTx(txWithItems);
+          setShowConfirmPopup(true);
+          setViewMode('PREORDER_RESULT');
+          setPreorderScanMode('MANUAL');
+        } else {
           setPreorderVerification({ status: 'NOT_FOUND' });
         }
       } else {

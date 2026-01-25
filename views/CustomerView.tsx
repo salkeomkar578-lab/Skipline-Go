@@ -2267,13 +2267,14 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   <ShieldCheck className="w-12 h-12 text-emerald-500" />
                 </div>
               </div>
-              <h2 className="text-2xl font-black text-white mb-2">🎉 Pickup Done!</h2>
-              <p className="text-white/80">Your products have been collected</p>
+              <h2 className="text-2xl font-black text-white mb-2">🎉 Items Verified!</h2>
+              <p className="text-white/80">Your items have been picked up successfully</p>
               
               {/* Verification Badge */}
-              <div className="mt-4 bg-white/20 backdrop-blur rounded-xl p-3 border border-white/30">
-                <p className="text-white font-bold text-sm">✅ Verification Complete</p>
-                <p className="text-white/70 text-xs">QR regeneration is disabled</p>
+              <div className="mt-4 bg-white/20 backdrop-blur rounded-xl p-4 border border-white/30">
+                <p className="text-white font-bold text-lg">✅ Pickup Complete</p>
+                <p className="text-white/70 text-sm mt-1">All items have been collected</p>
+                <p className="text-white/50 text-xs mt-2">Code: {viewingPreorder.preorderPickupCode}</p>
               </div>
             </div>
           )}
@@ -2295,19 +2296,21 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </div>
           )}
           
-          {/* QR Code Card */}
-          <div className="bg-white rounded-3xl p-6 shadow-2xl mb-4">
-            <PreorderQRCode 
-              transaction={{
-                ...viewingPreorder,
-                preorderPickupCode: viewingPreorder.preorderPickupCode || '',
-                preorderMall: viewingPreorder.preorderMall || viewingPreorder.branch || ''
-              } as Transaction} 
-              size={200}
-              showAnimation={false}
-              isVerified={isCollected}
-            />
-          </div>
+          {/* QR Code Card - HIDE when verified, only show when pending */}
+          {!isCollected && (
+            <div className="bg-white rounded-3xl p-6 shadow-2xl mb-4">
+              <PreorderQRCode 
+                transaction={{
+                  ...viewingPreorder,
+                  preorderPickupCode: viewingPreorder.preorderPickupCode || '',
+                  preorderMall: viewingPreorder.preorderMall || viewingPreorder.branch || ''
+                } as Transaction} 
+                size={200}
+                showAnimation={false}
+                isVerified={false}
+              />
+            </div>
+          )}
           
           {/* Pickup Location */}
           {viewingPreorder.preorderMall && (

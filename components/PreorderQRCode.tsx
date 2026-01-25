@@ -101,12 +101,11 @@ export const decodePreorderQR = (qrData: string): {
       return { valid: false, error: 'Checksum mismatch - QR may be tampered' };
     }
     
-    // Check if QR has expired (only if expiresAt is present)
-    if (data.expiresAt && Date.now() > data.expiresAt) {
-      return { valid: false, expired: true, data, error: 'QR code has expired. Ask customer to regenerate.' };
-    }
+    // Check if QR has expired - still return valid but mark as expired
+    // Staff can still verify expired QRs, they just need customer to regenerate for scanning
+    const isExpired = data.expiresAt && Date.now() > data.expiresAt;
     
-    return { valid: true, data };
+    return { valid: true, expired: isExpired, data };
   } catch (e) {
     console.error('Failed to decode preorder QR:', e);
     return { valid: false, error: 'Invalid QR code format' };
