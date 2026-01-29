@@ -449,8 +449,26 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   useEffect(() => {
     const loadHistory = () => {
       const allTx = getAllTransactions();
-      const userHistory = allTx.filter(t => t.userId === userId);
-      console.log('📜 Loaded history:', userHistory.length, 'transactions');
+
+      // Include transactions that belong to this userId OR match pickup codes saved for guests
+      let guestMappings: { pickupCode: string; txId: string }[] = [];
+      try {
+        guestMappings = JSON.parse(localStorage.getItem('skipline_guest_pickups') || '[]');
+      } catch (e) {
+        guestMappings = [];
+      }
+
+      const guestTxIds = guestMappings.map(g => g.txId);
+
+      const userHistory = allTx.filter(t => {
+        if (t.userId === userId) return true;
+        if (guestTxIds.includes(t.id)) return true;
+        // Also match by pickup code for safety (same code may be used)
+        if (t.preorderPickupCode && guestMappings.find(g => (g.pickupCode || '').toUpperCase() === (t.preorderPickupCode || '').toUpperCase())) return true;
+        return false;
+      });
+
+      console.log('📜 Loaded history (including guest pickups):', userHistory.length, 'transactions');
       setTransactionHistory(userHistory);
     };
     
@@ -1827,6 +1845,17 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   console.log('✅ Preorder saved to Firebase:', txId, 'Pickup Code:', pickupCode);
                 } catch (error) {
                   console.error('❌ Firebase save error:', error);
+                }
+
+                // Persist guest pickup mapping so guest users (or different logins)
+                // can retrieve their preorder by pickup code even if userId differs
+                try {
+                  const key = 'skipline_guest_pickups';
+                  const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                  existing.push({ pickupCode, txId });
+                  localStorage.setItem(key, JSON.stringify(existing));
+                } catch (e) {
+                  console.warn('Could not save guest pickup mapping', e);
                 }
                 
                 // Verify save worked

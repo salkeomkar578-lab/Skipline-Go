@@ -1193,7 +1193,7 @@ We welcome help from everyone! See our [Contributing Guide](CONTRIBUTING.md).
 
 **⭐ If you like this project, give us a star!**
 
-Made with ❤️ by **MyTech Team** for **TechSprint 2026**
+Made with ❤️ by **MyTech Team** 
 
 ---
 
