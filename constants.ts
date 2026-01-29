@@ -6,11 +6,110 @@
 import { Product } from './types';
 
 // ==================== PRODUCT CATALOG ====================
-// Using DiceBear API for reliable, consistent product images
+// Using real product images from reliable CDN sources
 
-// Helper function to generate product image
-const getProductImage = (seed: string, style: string = 'shapes') => 
-  `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=f8fafc&size=200`;
+// Real product image URLs (using reliable image sources)
+const PRODUCT_IMAGES: Record<string, string> = {
+  // Dairy
+  'amul-milk': 'https://www.bigbasket.com/media/uploads/p/l/40183115_3-amul-gold-milk.jpg',
+  'amul-butter': 'https://www.bigbasket.com/media/uploads/p/l/126906_7-amul-butter-pasteurised.jpg',
+  'mother-dairy-curd': 'https://www.bigbasket.com/media/uploads/p/l/40024790_6-mother-dairy-curd-classic.jpg',
+  'amul-cheese': 'https://www.bigbasket.com/media/uploads/p/l/266578_17-amul-cheese-slices.jpg',
+  // Noodles
+  'maggi': 'https://www.bigbasket.com/media/uploads/p/l/241014_14-maggi-2-minute-instant-noodles-masala.jpg',
+  'yippee': 'https://www.bigbasket.com/media/uploads/p/l/40019210_11-sunfeast-yippee-noodles-magic-masala.jpg',
+  'top-ramen': 'https://www.bigbasket.com/media/uploads/p/l/40018346_9-top-ramen-curry-noodles.jpg',
+  // Beverages
+  'tata-tea': 'https://www.bigbasket.com/media/uploads/p/l/266110_12-tata-tea-premium.jpg',
+  'nescafe': 'https://www.bigbasket.com/media/uploads/p/l/265836_17-nescafe-classic-100-pure-instant-coffee.jpg',
+  'real-juice': 'https://www.bigbasket.com/media/uploads/p/l/265520_11-real-fruit-power-juice-mixed-fruit.jpg',
+  'coca-cola': 'https://www.bigbasket.com/media/uploads/p/l/251006_13-coca-cola-soft-drink.jpg',
+  // Snacks
+  'parle-g': 'https://www.bigbasket.com/media/uploads/p/l/102008_8-parle-g-gold-biscuits.jpg',
+  'britannia': 'https://www.bigbasket.com/media/uploads/p/l/40020217_8-britannia-good-day-cashew-cookies.jpg',
+  'lays': 'https://www.bigbasket.com/media/uploads/p/l/266497_9-lays-potato-chips-classic-salted.jpg',
+  'kurkure': 'https://www.bigbasket.com/media/uploads/p/l/40019622_10-kurkure-namkeen-masala-munch.jpg',
+  'haldirams': 'https://www.bigbasket.com/media/uploads/p/l/40018969_7-haldirams-namkeen-aloo-bhujia.jpg',
+  // Personal Care
+  'dettol': 'https://www.bigbasket.com/media/uploads/p/l/30007407_14-dettol-bathing-bar-soap-original.jpg',
+  'colgate': 'https://www.bigbasket.com/media/uploads/p/l/40012614_11-colgate-maxfresh-toothpaste-blue-gel-peppermint-ice.jpg',
+  'head-shoulders': 'https://www.bigbasket.com/media/uploads/p/l/40075277_5-head-shoulders-anti-dandruff-shampoo-smooth-silky.jpg',
+  'dove': 'https://www.bigbasket.com/media/uploads/p/l/40001400_9-dove-cream-beauty-bathing-bar.jpg',
+  // Staples
+  'india-gate': 'https://www.bigbasket.com/media/uploads/p/l/10000203_28-india-gate-basmati-rice-classic.jpg',
+  'fortune-oil': 'https://www.bigbasket.com/media/uploads/p/l/145423_16-fortune-sunlite-refined-sunflower-oil.jpg',
+  'tata-dal': 'https://www.bigbasket.com/media/uploads/p/l/40019757_10-tata-sampann-unpolished-toor-dal.jpg',
+  'aashirvaad': 'https://www.bigbasket.com/media/uploads/p/l/126906_15-aashirvaad-atta-whole-wheat.jpg',
+  'saffola': 'https://www.bigbasket.com/media/uploads/p/l/147491_15-saffola-gold-pro-healthy-lifestyle-edible-oil.jpg',
+  // Spices
+  'mdh': 'https://www.bigbasket.com/media/uploads/p/l/40017938_8-mdh-garam-masala.jpg',
+  'everest': 'https://www.bigbasket.com/media/uploads/p/l/40000891_5-everest-powder-turmeric.jpg',
+  'catch': 'https://www.bigbasket.com/media/uploads/p/l/267281_5-catch-red-chilli-powder.jpg',
+  'tata-salt': 'https://www.bigbasket.com/media/uploads/p/l/241570_8-tata-salt-iodized-salt.jpg',
+  // Electronics - Use placeholder images
+  'boat-headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&q=80',
+  'powerbank': 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=200&q=80',
+  'led-bulb': 'https://images.unsplash.com/photo-1532007943853-f7dfa0f960a9?w=200&q=80',
+  'speaker': 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=200&q=80',
+  // Fresh Produce
+  'tomatoes': 'https://images.unsplash.com/photo-1546470427-f5c76e3c5a0b?w=200&q=80',
+  'onions': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=200&q=80',
+  'potatoes': 'https://images.unsplash.com/photo-1518977676601-b53f82ber67?w=200&q=80',
+  'bananas': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=200&q=80',
+  'apples': 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=200&q=80'
+};
+
+// Fallback image generator for products without real images
+const getFallbackImage = (seed: string) => 
+  `https://api.dicebear.com/7.x/icons/svg?seed=${encodeURIComponent(seed)}&backgroundColor=f8fafc&size=200`;
+
+// Helper function to get product image (uses real images where available, fallback otherwise)
+const getProductImage = (key: string, _style?: string) => {
+  // Map old keys to new image keys
+  const keyMap: Record<string, string> = {
+    'amul-milk-gold': 'amul-milk',
+    'amul-butter-500': 'amul-butter',
+    'mother-dairy-curd': 'mother-dairy-curd',
+    'amul-cheese-slices': 'amul-cheese',
+    'maggi-noodles': 'maggi',
+    'yippee-noodles': 'yippee',
+    'top-ramen-curry': 'top-ramen',
+    'tata-tea-gold': 'tata-tea',
+    'nescafe-coffee': 'nescafe',
+    'real-juice-mixed': 'real-juice',
+    'coca-cola-bottle': 'coca-cola',
+    'parle-g-gold': 'parle-g',
+    'britannia-goodday': 'britannia',
+    'lays-classic': 'lays',
+    'kurkure-masala': 'kurkure',
+    'haldirams-bhujia': 'haldirams',
+    'dettol-soap': 'dettol',
+    'colgate-maxfresh': 'colgate',
+    'head-shoulders': 'head-shoulders',
+    'dove-soap-pack': 'dove',
+    'indiagate-rice': 'india-gate',
+    'fortune-oil': 'fortune-oil',
+    'tata-toor-dal': 'tata-dal',
+    'aashirvaad-atta': 'aashirvaad',
+    'saffola-gold': 'saffola',
+    'mdh-garam-masala': 'mdh',
+    'everest-turmeric': 'everest',
+    'catch-chilli': 'catch',
+    'tata-salt': 'tata-salt',
+    'boat-rockerz-450': 'boat-headphones',
+    'mi-powerbank': 'powerbank',
+    'syska-led-bulb': 'led-bulb',
+    'portronics-speaker': 'speaker',
+    'fresh-tomatoes': 'tomatoes',
+    'fresh-onions': 'onions',
+    'fresh-potatoes': 'potatoes',
+    'fresh-bananas': 'bananas',
+    'shimla-apples': 'apples'
+  };
+  
+  const mappedKey = keyMap[key] || key;
+  return PRODUCT_IMAGES[mappedKey] || getFallbackImage(key);
+};
 
 // Product icon mapping for better visuals
 const PRODUCT_ICONS: Record<string, string> = {
