@@ -8,55 +8,55 @@ import { Product } from './types';
 // ==================== PRODUCT CATALOG ====================
 // Using real product images from reliable CDN sources
 
-// Real product image URLs (using reliable image sources)
+// Real product image URLs (using reliable image sources - Unsplash & Pexels)
 const PRODUCT_IMAGES: Record<string, string> = {
-  // Dairy
-  'amul-milk': 'https://www.bigbasket.com/media/uploads/p/l/40183115_3-amul-gold-milk.jpg',
-  'amul-butter': 'https://www.bigbasket.com/media/uploads/p/l/126906_7-amul-butter-pasteurised.jpg',
-  'mother-dairy-curd': 'https://www.bigbasket.com/media/uploads/p/l/40024790_6-mother-dairy-curd-classic.jpg',
-  'amul-cheese': 'https://www.bigbasket.com/media/uploads/p/l/266578_17-amul-cheese-slices.jpg',
+  // Dairy - Using Unsplash food photography
+  'amul-milk': 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&q=80',
+  'amul-butter': 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?w=300&q=80',
+  'mother-dairy-curd': 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300&q=80',
+  'amul-cheese': 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=300&q=80',
   // Noodles
-  'maggi': 'https://www.bigbasket.com/media/uploads/p/l/241014_14-maggi-2-minute-instant-noodles-masala.jpg',
-  'yippee': 'https://www.bigbasket.com/media/uploads/p/l/40019210_11-sunfeast-yippee-noodles-magic-masala.jpg',
-  'top-ramen': 'https://www.bigbasket.com/media/uploads/p/l/40018346_9-top-ramen-curry-noodles.jpg',
+  'maggi': 'https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=300&q=80',
+  'yippee': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300&q=80',
+  'top-ramen': 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=300&q=80',
   // Beverages
-  'tata-tea': 'https://www.bigbasket.com/media/uploads/p/l/266110_12-tata-tea-premium.jpg',
-  'nescafe': 'https://www.bigbasket.com/media/uploads/p/l/265836_17-nescafe-classic-100-pure-instant-coffee.jpg',
-  'real-juice': 'https://www.bigbasket.com/media/uploads/p/l/265520_11-real-fruit-power-juice-mixed-fruit.jpg',
-  'coca-cola': 'https://www.bigbasket.com/media/uploads/p/l/251006_13-coca-cola-soft-drink.jpg',
+  'tata-tea': 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=300&q=80',
+  'nescafe': 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&q=80',
+  'real-juice': 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=300&q=80',
+  'coca-cola': 'https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=300&q=80',
   // Snacks
-  'parle-g': 'https://www.bigbasket.com/media/uploads/p/l/102008_8-parle-g-gold-biscuits.jpg',
-  'britannia': 'https://www.bigbasket.com/media/uploads/p/l/40020217_8-britannia-good-day-cashew-cookies.jpg',
-  'lays': 'https://www.bigbasket.com/media/uploads/p/l/266497_9-lays-potato-chips-classic-salted.jpg',
-  'kurkure': 'https://www.bigbasket.com/media/uploads/p/l/40019622_10-kurkure-namkeen-masala-munch.jpg',
-  'haldirams': 'https://www.bigbasket.com/media/uploads/p/l/40018969_7-haldirams-namkeen-aloo-bhujia.jpg',
+  'parle-g': 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=300&q=80',
+  'britannia': 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=300&q=80',
+  'lays': 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&q=80',
+  'kurkure': 'https://images.unsplash.com/photo-1621447504864-d8686e12698c?w=300&q=80',
+  'haldirams': 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=300&q=80',
   // Personal Care
-  'dettol': 'https://www.bigbasket.com/media/uploads/p/l/30007407_14-dettol-bathing-bar-soap-original.jpg',
-  'colgate': 'https://www.bigbasket.com/media/uploads/p/l/40012614_11-colgate-maxfresh-toothpaste-blue-gel-peppermint-ice.jpg',
-  'head-shoulders': 'https://www.bigbasket.com/media/uploads/p/l/40075277_5-head-shoulders-anti-dandruff-shampoo-smooth-silky.jpg',
-  'dove': 'https://www.bigbasket.com/media/uploads/p/l/40001400_9-dove-cream-beauty-bathing-bar.jpg',
+  'dettol': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=300&q=80',
+  'colgate': 'https://images.unsplash.com/photo-1628359355624-855c97cf3715?w=300&q=80',
+  'head-shoulders': 'https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?w=300&q=80',
+  'dove': 'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=300&q=80',
   // Staples
-  'india-gate': 'https://www.bigbasket.com/media/uploads/p/l/10000203_28-india-gate-basmati-rice-classic.jpg',
-  'fortune-oil': 'https://www.bigbasket.com/media/uploads/p/l/145423_16-fortune-sunlite-refined-sunflower-oil.jpg',
-  'tata-dal': 'https://www.bigbasket.com/media/uploads/p/l/40019757_10-tata-sampann-unpolished-toor-dal.jpg',
-  'aashirvaad': 'https://www.bigbasket.com/media/uploads/p/l/126906_15-aashirvaad-atta-whole-wheat.jpg',
-  'saffola': 'https://www.bigbasket.com/media/uploads/p/l/147491_15-saffola-gold-pro-healthy-lifestyle-edible-oil.jpg',
+  'india-gate': 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&q=80',
+  'fortune-oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&q=80',
+  'tata-dal': 'https://images.unsplash.com/photo-1613758947307-f3b8f5d80711?w=300&q=80',
+  'aashirvaad': 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=300&q=80',
+  'saffola': 'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=300&q=80',
   // Spices
-  'mdh': 'https://www.bigbasket.com/media/uploads/p/l/40017938_8-mdh-garam-masala.jpg',
-  'everest': 'https://www.bigbasket.com/media/uploads/p/l/40000891_5-everest-powder-turmeric.jpg',
-  'catch': 'https://www.bigbasket.com/media/uploads/p/l/267281_5-catch-red-chilli-powder.jpg',
-  'tata-salt': 'https://www.bigbasket.com/media/uploads/p/l/241570_8-tata-salt-iodized-salt.jpg',
-  // Electronics - Use placeholder images
-  'boat-headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&q=80',
-  'powerbank': 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=200&q=80',
-  'led-bulb': 'https://images.unsplash.com/photo-1532007943853-f7dfa0f960a9?w=200&q=80',
-  'speaker': 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=200&q=80',
+  'mdh': 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&q=80',
+  'everest': 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=300&q=80',
+  'catch': 'https://images.unsplash.com/photo-1599909533986-3ee58c69cf6a?w=300&q=80',
+  'tata-salt': 'https://images.unsplash.com/photo-1518110925495-5fe2f8cbf7f1?w=300&q=80',
+  // Electronics
+  'boat-headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&q=80',
+  'powerbank': 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=300&q=80',
+  'led-bulb': 'https://images.unsplash.com/photo-1532007943853-f7dfa0f960a9?w=300&q=80',
+  'speaker': 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=300&q=80',
   // Fresh Produce
-  'tomatoes': 'https://images.unsplash.com/photo-1546470427-f5c76e3c5a0b?w=200&q=80',
-  'onions': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=200&q=80',
-  'potatoes': 'https://images.unsplash.com/photo-1518977676601-b53f82ber67?w=200&q=80',
-  'bananas': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=200&q=80',
-  'apples': 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=200&q=80'
+  'tomatoes': 'https://images.unsplash.com/photo-1546470427-0d9e87ad9e0d?w=300&q=80',
+  'onions': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=300&q=80',
+  'potatoes': 'https://images.unsplash.com/photo-1518977676601-b53f82abe2ff?w=300&q=80',
+  'bananas': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&q=80',
+  'apples': 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&q=80'
 };
 
 // Fallback image generator for products without real images

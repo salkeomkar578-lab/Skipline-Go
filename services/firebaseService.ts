@@ -620,22 +620,56 @@ export const getDashboardStats = async (): Promise<{
 /**
  * Send verification notification to customer
  * This allows staff on Device A to notify customer on Device B
+ * ENHANCED: Now writes to multiple storage keys and dispatches storage event
  */
 export const sendVerificationNotification = async (
   transactionId: string,
   notificationType: 'gate_released' | 'flagged' | 'preorder_collected',
   message: string
 ): Promise<void> => {
-  // Always save to localStorage for same-device scenarios
-  const localKey = notificationType === 'preorder_collected' 
-    ? `preorder_verified_${transactionId}`
-    : `qr_verified_${transactionId}`;
-    
-  localStorage.setItem(localKey, JSON.stringify({
+  const notificationData = {
     type: notificationType === 'flagged' ? 'flagged' : 'success',
     message,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    transactionId
+  };
+  
+  // Save to multiple localStorage keys for maximum compatibility
+  const keysToWrite = [
+    notificationType === 'preorder_collected' 
+      ? `preorder_verified_${transactionId}`
+      : `qr_verified_${transactionId}`,
+    `notification_${transactionId}`
+  ];
+  
+  keysToWrite.forEach(key => {
+    localStorage.setItem(key, JSON.stringify(notificationData));
+  });
+  
+  // Also update the transaction in localStorage to trigger cross-tab sync
+  const txData = localStorage.getItem('skipline_transactions');
+  if (txData) {
+    try {
+      const transactions = JSON.parse(txData);
+      const txIndex = transactions.findIndex((t: any) => t.id === transactionId);
+      if (txIndex >= 0) {
+        transactions[txIndex].lastNotification = notificationData;
+        transactions[txIndex]._notificationSent = false; // Reset to allow re-detection
+        localStorage.setItem('skipline_transactions', JSON.stringify(transactions));
+      }
+    } catch (e) {
+      console.error('Error updating transaction with notification:', e);
+    }
+  }
+  
+  // Dispatch storage event for cross-tab synchronization
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: `qr_verified_${transactionId}`,
+    newValue: JSON.stringify(notificationData),
+    url: window.location.href
   }));
+  
+  console.log('📢 Notification dispatched to all tabs:', transactionId, notificationType);
   
   if (isDemoMode || !db) {
     console.log('📢 Notification saved locally (demo mode):', transactionId);
@@ -662,62 +696,100 @@ export const sendVerificationNotification = async (
 /**
  * Subscribe to transaction notification updates
  * Customer uses this to listen for verification from staff
+ * ENHANCED: Now polls more aggressively and checks multiple storage keys
  */
 export const subscribeToTransactionNotification = (
   transactionId: string,
   callback: (notification: { type: string; message: string } | null) => void
 ): (() => void) => {
-  // In demo mode, use localStorage polling
-  if (isDemoMode || !db) {
-    console.log('📡 Using localStorage polling for notifications (demo mode)');
-    const interval = setInterval(() => {
-      // Check both notification types
-      const qrData = localStorage.getItem(`qr_verified_${transactionId}`);
-      const preorderData = localStorage.getItem(`preorder_verified_${transactionId}`);
-      
-      if (qrData) {
-        try {
-          const data = JSON.parse(qrData);
-          localStorage.removeItem(`qr_verified_${transactionId}`);
-          callback(data);
-        } catch (e) {
-          console.error('Parse error:', e);
-        }
-      }
-      
-      if (preorderData) {
-        try {
-          const data = JSON.parse(preorderData);
-          localStorage.removeItem(`preorder_verified_${transactionId}`);
-          callback(data);
-        } catch (e) {
-          console.error('Parse error:', e);
-        }
-      }
-    }, 500);
+  // ALWAYS use localStorage polling as the primary mechanism for demo
+  // This ensures cross-browser/cross-tab sync works reliably
+  console.log('📡 Setting up enhanced notification polling for:', transactionId);
+  
+  let lastCheckTime = Date.now();
+  
+  const checkNotifications = () => {
+    // Check both notification types with multiple key patterns
+    const keysToCheck = [
+      `qr_verified_${transactionId}`,
+      `preorder_verified_${transactionId}`,
+      `notification_${transactionId}`,
+      // Also check by pickup code if available
+      `qr_verified_${transactionId.split('-').slice(-1)[0]}`,
+    ];
     
-    return () => clearInterval(interval);
-  }
-  
-  console.log('📡 Subscribing to Firebase notification for:', transactionId);
-  
-  const docRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
-  
-  return onSnapshot(docRef, (snapshot) => {
-    if (snapshot.exists()) {
-      const data = snapshot.data();
-      if (data.notification && !data.notification.read) {
-        console.log('📬 Notification received:', data.notification);
-        callback({
-          type: data.notification.type === 'flagged' ? 'flagged' : 'success',
-          message: data.notification.message
-        });
-        
-        // Mark as read
-        updateDoc(docRef, { 'notification.read': true }).catch(console.error);
+    for (const key of keysToCheck) {
+      const data = localStorage.getItem(key);
+      if (data) {
+        try {
+          const parsedData = JSON.parse(data);
+          // Only process if notification is newer than last check
+          if (!parsedData.processedAt || parsedData.timestamp > lastCheckTime - 1000) {
+            console.log('📬 Found notification:', key, parsedData);
+            localStorage.removeItem(key);
+            // Mark as processed
+            parsedData.processedAt = Date.now();
+            callback(parsedData);
+            return; // Process one notification at a time
+          }
+        } catch (e) {
+          console.error('Parse error for key', key, ':', e);
+          localStorage.removeItem(key);
+        }
       }
     }
-  }, (error) => {
-    console.error('Notification subscription error:', error);
-  });
+    
+    // Also check the transactions storage directly for status changes
+    const txData = localStorage.getItem('skipline_transactions');
+    if (txData) {
+      try {
+        const transactions = JSON.parse(txData);
+        const tx = transactions.find((t: any) => t.id === transactionId);
+        if (tx) {
+          // Check if status changed to VERIFIED or PREORDER_COLLECTED
+          if (tx.status === 'VERIFIED' && !tx._notificationSent) {
+            console.log('📬 Detected VERIFIED status for:', transactionId);
+            callback({ type: 'success', message: 'Gate released! You may exit.' });
+            // Mark notification as sent
+            tx._notificationSent = true;
+            localStorage.setItem('skipline_transactions', JSON.stringify(transactions));
+          } else if (tx.status === 'PREORDER_COLLECTED' && !tx._notificationSent) {
+            console.log('📬 Detected PREORDER_COLLECTED status for:', transactionId);
+            callback({ type: 'success', message: 'Order collected successfully!' });
+            tx._notificationSent = true;
+            localStorage.setItem('skipline_transactions', JSON.stringify(transactions));
+          } else if (tx.status === 'FLAGGED' && !tx._notificationSent) {
+            console.log('📬 Detected FLAGGED status for:', transactionId);
+            callback({ type: 'flagged', message: 'Please proceed to customer service.' });
+            tx._notificationSent = true;
+            localStorage.setItem('skipline_transactions', JSON.stringify(transactions));
+          }
+        }
+      } catch (e) {
+        console.error('Error checking transaction status:', e);
+      }
+    }
+    
+    lastCheckTime = Date.now();
+  };
+  
+  // Poll every 300ms for faster response (was 500ms)
+  const interval = setInterval(checkNotifications, 300);
+  
+  // Also listen for storage events for instant cross-tab sync
+  const storageHandler = (e: StorageEvent) => {
+    if (e.key?.includes(transactionId) || e.key === 'skipline_transactions') {
+      console.log('📡 Storage event detected, checking notifications');
+      setTimeout(checkNotifications, 50); // Small delay to ensure data is written
+    }
+  };
+  window.addEventListener('storage', storageHandler);
+  
+  // Initial check
+  checkNotifications();
+  
+  return () => {
+    clearInterval(interval);
+    window.removeEventListener('storage', storageHandler);
+  };
 };

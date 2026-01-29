@@ -878,44 +878,54 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   // ============================================
   if (viewState === 'MODE_SELECT') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 safe-area-inset">
-        <div className="max-w-md mx-auto pt-6 pb-20">
-          {/* Hero Header */}
-          <div className="text-center mb-8">
-            <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-2xl shadow-amber-500/30 transform rotate-3">
-              <span className="text-5xl">🛒</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 p-4 safe-area-inset relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-40 right-10 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        </div>
+        
+        <div className="max-w-md mx-auto pt-6 pb-24 relative z-10">
+          {/* Hero Header with 3D Effect */}
+          <div className="text-center mb-10">
+            <div className="relative inline-block">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl blur-xl opacity-50 animate-pulse" />
+              <div className="relative w-28 h-28 bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-amber-500/40 transform rotate-3 hover:rotate-0 transition-transform duration-500 card-float">
+                <span className="text-5xl drop-shadow-lg">🛒</span>
+              </div>
             </div>
-            <h1 className="text-4xl font-black text-white tracking-tight">{t.app.name}</h1>
-            <p className="text-amber-400 font-bold mt-2 text-lg">{t.app.tagline}</p>
-            <p className="text-slate-400 text-sm mt-1">{t.app.smartMallCheckout}</p>
+            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 tracking-tight">{t.app.name}</h1>
+            <p className="text-amber-400 font-bold mt-2 text-lg neon-text">{t.app.tagline}</p>
+            <p className="text-slate-400 text-sm mt-2">{t.app.smartMallCheckout}</p>
           </div>
 
-          {/* Mode Selection Cards */}
+          {/* Mode Selection Cards - 3D Glass Effect */}
           <div className="space-y-4">
-            {/* Preorder Online - PRIMARY CTA */}
+            {/* Preorder Online - PRIMARY CTA with Glow */}
             <button
               onClick={() => setViewState('CITY_SELECT')}
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 p-5 rounded-2xl shadow-xl text-left active:scale-[0.98] transition-transform group"
+              className="w-full glass-card bg-gradient-to-r from-purple-600/80 to-indigo-600/80 p-5 rounded-2xl shadow-xl text-left active:scale-[0.98] transition-all duration-300 group hover:shadow-purple-500/30 hover:shadow-2xl hover:-translate-y-1 border border-purple-400/30"
             >
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-active:scale-90 transition-transform">
-                  <Globe className="w-7 h-7 text-white" />
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                  <Globe className="w-7 h-7 text-white drop-shadow" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-xl font-black text-white">Preorder & Pickup</h2>
-                  <p className="text-white/70 text-sm mt-0.5">Order now, collect from mall</p>
+                  <h2 className="text-xl font-black text-white drop-shadow">Preorder & Pickup</h2>
+                  <p className="text-white/80 text-sm mt-0.5">Order now, collect from mall</p>
                 </div>
-                <ArrowRight className="w-6 h-6 text-white/50" />
+                <ArrowRight className="w-6 h-6 text-white/70 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
 
-            {/* Shop In-Store */}
+            {/* Shop In-Store - Glass Effect */}
             <button
               onClick={() => setViewState('BRANCH_SELECT')}
-              className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-xl text-left active:scale-[0.98] transition-transform group"
+              className="w-full glass-card bg-gradient-to-r from-emerald-500/80 to-teal-600/80 p-5 rounded-2xl shadow-xl text-left active:scale-[0.98] transition-all duration-300 group hover:shadow-emerald-500/30 hover:shadow-2xl hover:-translate-y-1 border border-emerald-400/30"
             >
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-active:scale-90 transition-transform">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
                   <Wifi className="w-7 h-7 text-white" />
                 </div>
                 <div className="flex-1">
@@ -927,58 +937,76 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </button>
 
             {/* My Orders */}
+            {/* My Orders - Glass Card */}
             <button
               onClick={() => setViewState('HISTORY')}
-              className="w-full bg-white/5 backdrop-blur border border-white/10 p-5 rounded-2xl text-left active:scale-[0.98] transition-transform"
+              className="w-full glass-card bg-white/5 backdrop-blur-xl border border-white/20 p-5 rounded-2xl text-left active:scale-[0.98] transition-all duration-300 hover:bg-white/10 hover:-translate-y-1 hover:shadow-xl group"
             >
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-500/30 to-orange-500/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-amber-500/20">
                   <Receipt className="w-7 h-7 text-amber-400" />
                 </div>
                 <div className="flex-1">
                   <h2 className="text-lg font-bold text-white">{t.customer.myOrders}</h2>
                   <p className="text-slate-400 text-sm">{transactionHistory.length} {t.customer.transactions}</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-slate-500" />
+                <ChevronRight className="w-5 h-5 text-slate-500 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
           </div>
 
-          {/* Stats Cards */}
-          <div className="mt-8 grid grid-cols-3 gap-3">
-            <div className="bg-white/5 backdrop-blur border border-white/10 p-4 rounded-xl text-center">
-              <p className="text-3xl font-black text-white">{transactionHistory.length}</p>
+          {/* Stats Cards - 3D Glass Effect */}
+          <div className="mt-10 grid grid-cols-3 gap-3">
+            <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/20 p-4 rounded-2xl text-center hover:scale-105 transition-transform cursor-default group">
+              <div className="w-10 h-10 bg-blue-500/20 rounded-xl mx-auto mb-2 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <ShoppingBag className="w-5 h-5 text-blue-400" />
+              </div>
+              <p className="text-2xl font-black text-white">{transactionHistory.length}</p>
               <p className="text-xs text-slate-400 mt-1">{t.customer.orders}</p>
             </div>
-            <div className="bg-white/5 backdrop-blur border border-white/10 p-4 rounded-xl text-center">
-              <p className="text-3xl font-black text-emerald-400">
+            <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/20 p-4 rounded-2xl text-center hover:scale-105 transition-transform cursor-default group">
+              <div className="w-10 h-10 bg-emerald-500/20 rounded-xl mx-auto mb-2 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <IndianRupee className="w-5 h-5 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-black text-emerald-400">
                 {(transactionHistory.reduce((s, t) => s + t.total, 0) / 1000).toFixed(1)}K
               </p>
               <p className="text-xs text-slate-400 mt-1">{t.customer.spent}</p>
             </div>
-            <div className="bg-white/5 backdrop-blur border border-white/10 p-4 rounded-xl text-center">
-              <p className="text-3xl font-black text-amber-400">{transactionHistory.length * 15}</p>
+            <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/20 p-4 rounded-2xl text-center hover:scale-105 transition-transform cursor-default group">
+              <div className="w-10 h-10 bg-amber-500/20 rounded-xl mx-auto mb-2 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Clock className="w-5 h-5 text-amber-400" />
+              </div>
+              <p className="text-2xl font-black text-amber-400">{transactionHistory.length * 15}</p>
               <p className="text-xs text-slate-400 mt-1">{t.customer.minsSaved}</p>
             </div>
           </div>
 
-          {/* User Badge */}
-          <div className="mt-6 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3">
-            <div className="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center">
-              <Star className="w-6 h-6 text-white" />
+          {/* User Badge - Enhanced Glass */}
+          <div className="mt-8 glass-card bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-5 flex items-center gap-4 hover:scale-[1.02] transition-transform">
+            <div className="relative">
+              <div className="absolute inset-0 bg-amber-500 rounded-full blur-md opacity-50" />
+              <div className="relative w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                <Star className="w-7 h-7 text-white" />
+              </div>
             </div>
             <div>
-              <p className="text-white font-bold">{t.tiers[userTier?.toLowerCase() as keyof typeof t.tiers] || userTier} {t.customer.member}</p>
-              <p className="text-amber-400/70 text-sm">ID: {userId.slice(0, 8)}...</p>
+              <p className="text-white font-bold text-lg">{t.tiers[userTier?.toLowerCase() as keyof typeof t.tiers] || userTier} {t.customer.member}</p>
+              <p className="text-amber-400/80 text-sm font-mono">ID: {userId.slice(0, 8)}...</p>
+            </div>
+            <div className="ml-auto">
+              <span className="bg-amber-500/20 text-amber-400 px-3 py-1.5 rounded-full text-xs font-bold">
+                ⭐ VIP
+              </span>
             </div>
           </div>
 
-          {/* Settings Section - Language & Exit */}
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-3">Settings</p>
-            <div className="flex gap-3">
+          {/* Settings Section - Language & Exit - Improved Spacing */}
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-4">Settings</p>
+            <div className="flex gap-3 flex-wrap">
               {/* Language Selector */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-[140px]">
                 <LanguageSelector variant="dark" showLabel={true} />
               </div>
               
@@ -986,7 +1014,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               {onExit && (
                 <button
                   onClick={onExit}
-                  className="bg-red-500/20 border border-red-500/30 text-red-400 px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-500/30 transition-colors"
+                  className="glass-card bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-500/20 hover:scale-105 transition-all"
                 >
                   <ArrowRight className="w-4 h-4 rotate-180" />
                   Exit App
