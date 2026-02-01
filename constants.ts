@@ -10,53 +10,53 @@ import { Product } from './types';
 
 // Real product image URLs (using reliable image sources - Unsplash & Pexels)
 const PRODUCT_IMAGES: Record<string, string> = {
-  // Dairy - Using Unsplash food photography
-  'amul-milk': 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&q=80',
-  'amul-butter': 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?w=300&q=80',
-  'mother-dairy-curd': 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300&q=80',
-  'amul-cheese': 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=300&q=80',
-  // Noodles
-  'maggi': 'https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=300&q=80',
-  'yippee': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300&q=80',
-  'top-ramen': 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=300&q=80',
-  // Beverages
-  'tata-tea': 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=300&q=80',
-  'nescafe': 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&q=80',
-  'real-juice': 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=300&q=80',
-  'coca-cola': 'https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=300&q=80',
-  // Snacks
-  'parle-g': 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=300&q=80',
-  'britannia': 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=300&q=80',
-  'lays': 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&q=80',
-  'kurkure': 'https://images.unsplash.com/photo-1621447504864-d8686e12698c?w=300&q=80',
-  'haldirams': 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=300&q=80',
-  // Personal Care
-  'dettol': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=300&q=80',
-  'colgate': 'https://images.unsplash.com/photo-1628359355624-855c97cf3715?w=300&q=80',
-  'head-shoulders': 'https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?w=300&q=80',
-  'dove': 'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=300&q=80',
-  // Staples
-  'india-gate': 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&q=80',
-  'fortune-oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&q=80',
-  'tata-dal': 'https://images.unsplash.com/photo-1613758947307-f3b8f5d80711?w=300&q=80',
-  'aashirvaad': 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=300&q=80',
-  'saffola': 'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=300&q=80',
-  // Spices
-  'mdh': 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&q=80',
-  'everest': 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=300&q=80',
-  'catch': 'https://images.unsplash.com/photo-1599909533986-3ee58c69cf6a?w=300&q=80',
-  'tata-salt': 'https://images.unsplash.com/photo-1518110925495-5fe2f8cbf7f1?w=300&q=80',
-  // Electronics
-  'boat-headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&q=80',
-  'powerbank': 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=300&q=80',
-  'led-bulb': 'https://images.unsplash.com/photo-1532007943853-f7dfa0f960a9?w=300&q=80',
-  'speaker': 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=300&q=80',
-  // Fresh Produce
-  'tomatoes': 'https://images.unsplash.com/photo-1546470427-0d9e87ad9e0d?w=300&q=80',
-  'onions': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=300&q=80',
-  'potatoes': 'https://images.unsplash.com/photo-1518977676601-b53f82abe2ff?w=300&q=80',
-  'bananas': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&q=80',
-  'apples': 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&q=80'
+  // Dairy - Real milk, butter, cheese, curd images
+  'amul-milk': 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&q=80',
+  'amul-butter': 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?w=400&q=80',
+  'mother-dairy-curd': 'https://images.unsplash.com/photo-1571212515416-fef01fc43637?w=400&q=80',
+  'amul-cheese': 'https://images.unsplash.com/photo-1618164436241-4473940d1f5c?w=400&q=80',
+  // Noodles - Real instant noodles images
+  'maggi': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&q=80',
+  'yippee': 'https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=400&q=80',
+  'top-ramen': 'https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=400&q=80',
+  // Beverages - Real tea, coffee, juice, cola
+  'tata-tea': 'https://images.unsplash.com/photo-1597318181409-cf64d0b5d8a2?w=400&q=80',
+  'nescafe': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400&q=80',
+  'real-juice': 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&q=80',
+  'coca-cola': 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=400&q=80',
+  // Snacks - Real biscuits, chips, namkeen
+  'parle-g': 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&q=80',
+  'britannia': 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400&q=80',
+  'lays': 'https://images.unsplash.com/photo-1621447504864-d8686e12698c?w=400&q=80',
+  'kurkure': 'https://images.unsplash.com/photo-1600952841320-db92ec4047ca?w=400&q=80',
+  'haldirams': 'https://images.unsplash.com/photo-1613919517906-4144d4f5a66a?w=400&q=80',
+  // Personal Care - Real soap, toothpaste, shampoo
+  'dettol': 'https://images.unsplash.com/photo-1584305574647-0cc949a2bb9f?w=400&q=80',
+  'colgate': 'https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=400&q=80',
+  'head-shoulders': 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=400&q=80',
+  'dove': 'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=400&q=80',
+  // Staples - Real rice, oil, dal, flour
+  'india-gate': 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&q=80',
+  'fortune-oil': 'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=400&q=80',
+  'tata-dal': 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400&q=80',
+  'aashirvaad': 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&q=80',
+  'saffola': 'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=400&q=80',
+  // Spices - Real masala, turmeric, chilli images
+  'mdh': 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&q=80',
+  'everest': 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400&q=80',
+  'catch': 'https://images.unsplash.com/photo-1599909533986-3ee58c69cf6a?w=400&q=80',
+  'tata-salt': 'https://images.unsplash.com/photo-1518110925495-5fe2f8cbf7f1?w=400&q=80',
+  // Electronics - Real headphones, powerbank, speaker
+  'boat-headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80',
+  'powerbank': 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&q=80',
+  'led-bulb': 'https://images.unsplash.com/photo-1532007943853-f7dfa0f960a9?w=400&q=80',
+  'speaker': 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&q=80',
+  // Fresh Produce - Real vegetables and fruits
+  'tomatoes': 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&q=80',
+  'onions': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=400&q=80',
+  'potatoes': 'https://images.unsplash.com/photo-1518977676601-b53f82abe2ff?w=400&q=80',
+  'bananas': 'https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400&q=80',
+  'apples': 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&q=80'
 };
 
 // Fallback image generator for products without real images

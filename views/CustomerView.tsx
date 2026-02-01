@@ -35,6 +35,7 @@ import {
 } from '../services/firebaseService';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
+import { AnimatedLogo3D } from '../components/AnimatedLogo3D';
 
 interface CustomerViewProps {
   userId: string;
@@ -878,22 +879,45 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   // ============================================
   if (viewState === 'MODE_SELECT') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 p-4 safe-area-inset relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-40 right-10 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+      <div className="min-h-screen bg-[#0a0a0f] p-4 safe-area-inset relative overflow-hidden">
+        {/* Premium Animated Background */}
+        <div className="animated-bg-container">
+          {/* Aurora gradient layers */}
+          <div className="aurora-layer aurora-1" />
+          <div className="aurora-layer aurora-2" />
+          <div className="aurora-layer aurora-3" />
+          
+          {/* Animated mesh grid */}
+          <div className="mesh-grid" />
+          
+          {/* Floating particles */}
+          <div className="floating-particles">
+            {[...Array(20)].map((_, i) => (
+              <div key={i} className={`particle particle-${i + 1}`} />
+            ))}
+          </div>
+          
+          {/* Star field */}
+          <div className="star-field">
+            {[...Array(30)].map((_, i) => (
+              <div key={i} className={`star star-${(i % 3) + 1}`} style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`
+              }} />
+            ))}
+          </div>
+          
+          {/* Glowing orb accent */}
+          <div className="glow-orb glow-orb-1" />
+          <div className="glow-orb glow-orb-2" />
         </div>
         
         <div className="max-w-md mx-auto pt-6 pb-24 relative z-10">
-          {/* Hero Header with 3D Effect */}
+          {/* Hero Header with 3D Animated Logo */}
           <div className="text-center mb-10">
-            <div className="relative inline-block">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl blur-xl opacity-50 animate-pulse" />
-              <div className="relative w-28 h-28 bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-amber-500/40 transform rotate-3 hover:rotate-0 transition-transform duration-500 card-float">
-                <span className="text-5xl drop-shadow-lg">🛒</span>
-              </div>
+            <div className="relative inline-flex justify-center mb-6">
+              <AnimatedLogo3D />
             </div>
             <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 tracking-tight">{t.app.name}</h1>
             <p className="text-amber-400 font-bold mt-2 text-lg neon-text">{t.app.tagline}</p>
@@ -1103,12 +1127,26 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   const preorderTotal = preorderCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   if (viewState === 'ONLINE_BROWSE') {
-    // Featured deals for online mode
+    // Featured deals for online mode - Enhanced with more offers
     const featuredDeals = [
-      { id: 'd1', title: '🔥 Flash Sale', discount: '30% OFF', category: 'Snacks', color: 'from-red-500 to-orange-500' },
-      { id: 'd2', title: '🥛 Dairy Week', discount: 'Buy 2 Get 1', category: 'Dairy', color: 'from-blue-500 to-cyan-500' },
-      { id: 'd3', title: '🍎 Fresh Picks', discount: '20% OFF', category: 'Produce', color: 'from-green-500 to-emerald-500' },
+      { id: 'd1', title: '🔥 Flash Sale', subtitle: 'Ends in 2h', discount: 'Up to 50% OFF', category: 'Snacks', color: 'from-red-500 to-orange-500', badge: 'HOT', timer: '02:00:00' },
+      { id: 'd2', title: '🥛 Dairy Days', subtitle: 'This Week Only', discount: 'Buy 2 Get 1', category: 'Dairy', color: 'from-blue-500 to-cyan-500', badge: 'NEW', timer: null },
+      { id: 'd3', title: '🍎 Fresh Picks', subtitle: 'Farm Fresh', discount: '20% OFF', category: 'Fresh Produce', color: 'from-green-500 to-emerald-500', badge: 'FRESH', timer: null },
+      { id: 'd4', title: '☕ Beverage Fest', subtitle: 'All Drinks', discount: 'Flat ₹30 OFF', category: 'Beverages', color: 'from-purple-500 to-pink-500', badge: 'DEAL', timer: null },
+      { id: 'd5', title: '🎧 Tech Tuesday', subtitle: 'Gadgets Sale', discount: 'Up to 40% OFF', category: 'Electronics', color: 'from-indigo-500 to-violet-500', badge: 'TECH', timer: '12:00:00' },
     ];
+
+    // Bank offers
+    const bankOffers = [
+      { bank: 'HDFC', discount: '10% cashback', min: 500, icon: '🏦', code: 'HDFC10' },
+      { bank: 'ICICI', discount: '₹100 off', min: 800, icon: '💳', code: 'ICICI100' },
+      { bank: 'Paytm', discount: '15% cashback', min: 300, icon: '📱', code: 'PAYTM15' },
+      { bank: 'Amazon Pay', discount: '₹50 off', min: 400, icon: '🛒', code: 'APAY50' },
+    ];
+
+    // Reward points calculation
+    const rewardPoints = transactionHistory.reduce((sum, tx) => sum + Math.floor(tx.total / 10), 0);
+    const nextRewardAt = 500 - (rewardPoints % 500);
     
     const storeInfo = {
       hours: '10:00 AM - 10:00 PM',
@@ -1117,9 +1155,15 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       distance: '2.5 km'
     };
 
+    // Quick reorder - last ordered items
+    const lastOrderedProducts = transactionHistory
+      .flatMap(tx => tx.items)
+      .slice(0, 6)
+      .filter((item, index, self) => self.findIndex(i => i.id === item.id) === index);
+
     return (
       <div className="min-h-screen bg-slate-50 safe-area-inset">
-        {/* Header */}
+        {/* Header - Enhanced with rewards */}
         <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-4 pt-4 pb-6 sticky top-0 z-40">
           <div className="max-w-lg mx-auto">
             <div className="flex items-center justify-between mb-4">
@@ -1127,13 +1171,17 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                 <ArrowRight className="w-4 h-4 rotate-180" /> Back
               </button>
               <div className="flex items-center gap-2">
+                {/* Rewards Badge */}
+                <div className="bg-white/20 text-white text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1">
+                  <Star className="w-3 h-3 fill-yellow-300 text-yellow-300" /> {rewardPoints} pts
+                </div>
                 <span className="bg-white/20 text-white text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1">
                   <Globe className="w-3 h-3" /> Online
                 </span>
                 {preorderCart.length > 0 && (
                   <button 
                     onClick={() => setShowPreorderModal(true)}
-                    className="relative bg-white text-amber-600 p-2 rounded-xl shadow-lg"
+                    className="relative bg-white text-amber-600 p-2 rounded-xl shadow-lg animate-bounce-subtle"
                   >
                     <ShoppingCart className="w-5 h-5" />
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
@@ -1159,28 +1207,139 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Quick Reorder Section - If user has history */}
+        {lastOrderedProducts.length > 0 && (
+          <div className="px-4 py-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-100">
+            <div className="max-w-lg mx-auto">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🔄</span>
+                  <h2 className="font-bold text-slate-800">Quick Reorder</h2>
+                </div>
+                <span className="text-purple-600 text-xs font-bold">Your Recent Items</span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                {lastOrderedProducts.slice(0, 5).map((item, i) => (
+                  <button
+                    key={`${item.id}-${i}`}
+                    onClick={() => addToPreorder(item)}
+                    className="flex-shrink-0 bg-white rounded-xl px-3 py-2 shadow-sm border border-purple-100 flex items-center gap-2 active:scale-95 transition-all"
+                  >
+                    <span className="text-xl">{item.icon || '📦'}</span>
+                    <div className="text-left">
+                      <p className="text-xs font-bold text-slate-800 line-clamp-1 max-w-[80px]">{item.name}</p>
+                      <p className="text-emerald-600 text-xs font-bold">{CURRENCY_SYMBOL}{item.price}</p>
+                    </div>
+                    <Plus className="w-4 h-4 text-purple-600" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         
-        {/* Featured Deals Carousel */}
+        {/* Featured Deals Carousel - Enhanced */}
         <div className="px-4 py-4 -mt-2">
           <div className="max-w-lg mx-auto">
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {featuredDeals.map(deal => (
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-bold text-slate-800 text-lg">🎉 Today's Deals</h2>
+              <span className="text-amber-500 text-xs font-bold">See All →</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+              {featuredDeals.map((deal, index) => (
                 <div 
                   key={deal.id}
                   onClick={() => setSelectedCategory(deal.category)}
-                  className={`flex-shrink-0 w-40 bg-gradient-to-br ${deal.color} rounded-2xl p-4 cursor-pointer active:scale-95 transition-transform shadow-lg`}
+                  className={`deal-card flex-shrink-0 w-44 bg-gradient-to-br ${deal.color} rounded-2xl p-4 cursor-pointer active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl snap-start relative overflow-hidden`}
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
+                  {/* Animated shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shine" />
+                  
+                  {/* Badge */}
+                  <span className="absolute top-2 right-2 bg-white/30 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+                    {deal.badge}
+                  </span>
+                  
                   <p className="text-white font-black text-lg">{deal.title}</p>
-                  <p className="text-white/90 text-sm font-bold mt-1">{deal.discount}</p>
-                  <p className="text-white/70 text-xs mt-2">{deal.category}</p>
+                  <p className="text-white/70 text-xs">{deal.subtitle}</p>
+                  <p className="text-white font-black text-xl mt-2">{deal.discount}</p>
+                  
+                  {/* Timer for flash sales */}
+                  {deal.timer && (
+                    <div className="bg-white/20 rounded-lg px-2 py-1 mt-2 inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-white" />
+                      <span className="text-white text-xs font-mono font-bold">{deal.timer}</span>
+                    </div>
+                  )}
+                  
+                  <p className="text-white/80 text-xs mt-2 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    {deal.category}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
         </div>
+
+        {/* Bank Offers Section */}
+        <div className="px-4 py-2">
+          <div className="max-w-lg mx-auto">
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-4 border border-indigo-100">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">💰</span>
+                <h3 className="font-bold text-slate-800">Bank Offers</h3>
+                <span className="text-xs text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full ml-auto">Save More</span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                {bankOffers.map((offer, i) => (
+                  <div key={i} className="flex-shrink-0 bg-white rounded-xl px-3 py-2 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{offer.icon}</span>
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">{offer.bank}</p>
+                        <p className="text-[10px] text-emerald-600 font-bold">{offer.discount}</p>
+                        <p className="text-[9px] text-slate-400">Min. ₹{offer.min} • Code: {offer.code}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Rewards Progress */}
+        <div className="px-4 py-2">
+          <div className="max-w-lg mx-auto">
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-4 border border-amber-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🏆</span>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">Skipline Rewards</h3>
+                    <p className="text-xs text-amber-700">{rewardPoints} points earned</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-500">{nextRewardAt} pts to next reward</p>
+                  <p className="text-sm font-bold text-amber-600">₹50 voucher</p>
+                </div>
+              </div>
+              <div className="w-full bg-amber-200 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${(rewardPoints % 500) / 5}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
         
         {/* Store Info Card - Dynamic based on preorderMall */}
-        <div className="px-4 mb-4">
+        <div className="px-4 mb-4 mt-2">
           <div className="max-w-lg mx-auto bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
             {preorderMall ? (
               <div className="flex items-center justify-between">
@@ -1224,67 +1383,144 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
           </div>
         </div>
         
-        {/* Categories - Fixed styling with flex-shrink-0 */}
+        {/* Categories - Scrollable with icons */}
         <div className="bg-white border-y px-4 py-3 overflow-x-auto scrollbar-hide">
           <div className="max-w-lg mx-auto flex gap-2">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  selectedCategory === cat 
-                    ? 'bg-amber-500 text-white shadow-md' 
-                    : 'bg-slate-100 text-slate-600 active:bg-slate-200'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+            {categories.map(cat => {
+              const categoryIcons: Record<string, string> = {
+                'All': '🛒',
+                'Dairy': '🥛',
+                'Instant Food': '🍜',
+                'Beverages': '☕',
+                'Biscuits': '🍪',
+                'Snacks': '🍿',
+                'Personal Care': '🧴',
+                'Staples': '🍚',
+                'Spices': '🌶️',
+                'Electronics': '🎧',
+                'Fresh Produce': '🥬'
+              };
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`category-btn flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 flex items-center gap-1.5 ${
+                    selectedCategory === cat 
+                      ? 'bg-amber-500 text-white shadow-md scale-105 active' 
+                      : 'bg-slate-100 text-slate-600 active:bg-slate-200'
+                  }`}
+                >
+                  <span className="text-base">{categoryIcons[cat] || '📦'}</span>
+                  {cat}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Products Grid */}
+        {/* Products Grid - Enhanced with real images */}
         <div className="max-w-lg mx-auto p-4 pb-32">
           <div className="flex items-center justify-between mb-4">
             <p className="text-slate-500 text-sm">{filteredProducts.length} {t.customer.products}</p>
             <div className="flex items-center gap-2">
+              <button className="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full flex items-center gap-1">
+                <Filter className="w-3 h-3" /> Filter
+              </button>
               <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">🏪 Store Pickup</span>
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            {filteredProducts.map(product => (
-              <div 
-                key={product.id} 
-                className="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 cursor-pointer active:scale-95 transition-transform"
-                onClick={() => setSelectedProduct(product)}
-              >
-                <div className="w-full aspect-square bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl mb-3 flex items-center justify-center text-5xl relative overflow-hidden">
-                  {product.icon || '📦'}
-                  {product.rating && (
-                    <div className="absolute top-2 right-2 bg-amber-400 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-white" /> {product.rating}
-                    </div>
-                  )}
-                  {/* Stock indicator */}
-                  <div className="absolute bottom-2 left-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full">
-                    In Stock
-                  </div>
-                </div>
-                <h3 className="font-bold text-slate-800 text-sm leading-tight line-clamp-2">{product.name}</h3>
-                <p className="text-emerald-600 font-black text-lg mt-1">{CURRENCY_SYMBOL}{product.price}</p>
-                <p className="text-slate-400 text-xs flex items-center gap-1 mt-1">
-                  <MapPin className="w-3 h-3" /> {product.aisle}
-                </p>
-                <button
-                  onClick={(e) => { e.stopPropagation(); addToPreorder(product); }}
-                  className="mt-2 w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2 rounded-lg text-xs font-bold shadow-sm hover:shadow-md transition-all"
+            {filteredProducts.map((product, index) => {
+              // Calculate discount based on product - consistent per product
+              const hasDiscount = product.id.charCodeAt(0) % 3 === 0;
+              const discountPercent = hasDiscount ? (10 + (product.id.charCodeAt(1) % 30)) : 0;
+              const originalPrice = hasDiscount ? Math.round(product.price * (100 / (100 - discountPercent))) : product.price;
+              
+              return (
+                <div 
+                  key={product.id} 
+                  className="product-card bg-white rounded-2xl p-3 shadow-sm border border-slate-100 cursor-pointer active:scale-95 transition-all duration-300 hover:shadow-lg"
+                  onClick={() => setSelectedProduct(product)}
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  + Add to Cart
-                </button>
-              </div>
-            ))}
+                  {/* Product Image with real image or fallback to icon */}
+                  <div className="w-full aspect-square rounded-xl mb-3 relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
+                    {product.image ? (
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                        loading="lazy"
+                        onError={(e) => {
+                          // Fallback to icon if image fails to load
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`absolute inset-0 flex items-center justify-center text-5xl ${product.image ? 'hidden' : ''}`}>
+                      {product.icon || '📦'}
+                    </div>
+                    
+                    {/* Rating badge */}
+                    {product.rating && (
+                      <div className="absolute top-2 right-2 bg-amber-400 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                        <Star className="w-3 h-3 fill-white" /> {product.rating}
+                      </div>
+                    )}
+                    
+                    {/* Discount badge */}
+                    {hasDiscount && (
+                      <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">
+                        {discountPercent}% OFF
+                      </div>
+                    )}
+                    
+                    {/* Stock indicator */}
+                    <div className="absolute bottom-2 left-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
+                      In Stock
+                    </div>
+                  </div>
+                  
+                  <h3 className="font-bold text-slate-800 text-sm leading-tight line-clamp-2">{product.name}</h3>
+                  
+                  {/* Price with original price if discounted */}
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-emerald-600 font-black text-lg">{CURRENCY_SYMBOL}{product.price}</p>
+                    {hasDiscount && (
+                      <p className="text-slate-400 text-xs line-through">{CURRENCY_SYMBOL}{originalPrice}</p>
+                    )}
+                  </div>
+                  
+                  <p className="text-slate-400 text-xs flex items-center gap-1 mt-1">
+                    <MapPin className="w-3 h-3" /> {product.aisle}
+                  </p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); addToPreorder(product); }}
+                    className="add-cart-btn mt-2 w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] active:scale-95"
+                  >
+                    + Add to Cart
+                  </button>
+                </div>
+              );
+            })}
           </div>
+
+          {/* Empty state */}
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-12">
+              <Search className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-500 font-medium">No products found</p>
+              <p className="text-slate-400 text-sm mt-1">Try a different search or category</p>
+              <button 
+                onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}
+                className="mt-4 text-amber-500 font-bold text-sm"
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
 
           {/* Quick Actions */}
           <div className="mt-6 grid grid-cols-2 gap-3">
@@ -1313,11 +1549,35 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               <p className="text-amber-400 text-xs font-bold uppercase tracking-wider">Limited Time</p>
               <h3 className="text-white font-black text-xl mt-1">First Order? Get 15% OFF</h3>
               <p className="text-slate-400 text-sm mt-1">Use code: SKIPFIRST</p>
-              <button className="mt-3 bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-bold">
-                Copy Code
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText('SKIPFIRST');
+                  setCopySuccess(true);
+                  setTimeout(() => setCopySuccess(false), 2000);
+                }}
+                className="mt-3 bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
+              >
+                {copySuccess ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copySuccess ? 'Copied!' : 'Copy Code'}
               </button>
             </div>
           </div>
+
+          {/* Free Delivery Progress */}
+          {preorderCart.length > 0 && preorderTotal < 499 && (
+            <div className="mt-4 bg-blue-50 rounded-2xl p-4 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-blue-800 font-bold text-sm">🚚 Free Delivery Progress</p>
+                <p className="text-blue-600 text-xs">₹{(499 - preorderTotal).toFixed(0)} more for free delivery</p>
+              </div>
+              <div className="w-full bg-blue-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (preorderTotal / 499) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bottom Navigation for Online Mode */}
@@ -1366,8 +1626,20 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto mb-4" />
               
               <div className="flex gap-4 mb-4">
-                <div className="w-28 h-28 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center text-6xl flex-shrink-0">
-                  {selectedProduct.icon || '📦'}
+                <div className="w-28 h-28 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center text-6xl flex-shrink-0 overflow-hidden">
+                  {selectedProduct.image ? (
+                    <img 
+                      src={selectedProduct.image} 
+                      alt={selectedProduct.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = `<span class="text-6xl">${selectedProduct.icon || '📦'}</span>`;
+                      }}
+                    />
+                  ) : (
+                    <span className="text-6xl">{selectedProduct.icon || '📦'}</span>
+                  )}
                 </div>
                 <div className="flex-1">
                   <h2 className="text-xl font-black text-slate-800">{selectedProduct.name}</h2>
@@ -1432,7 +1704,21 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   <div className="space-y-3 mb-6 max-h-48 overflow-y-auto">
                     {preorderCart.map(item => (
                       <div key={item.id} className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
-                        <span className="text-3xl">{item.icon || '📦'}</span>
+                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0">
+                          {item.image ? (
+                            <img 
+                              src={item.image} 
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.parentElement!.innerHTML = `<span class="text-2xl">${item.icon || '📦'}</span>`;
+                              }}
+                            />
+                          ) : (
+                            <span className="text-2xl">{item.icon || '📦'}</span>
+                          )}
+                        </div>
                         <div className="flex-1">
                           <p className="font-bold text-slate-800 text-sm">{item.name}</p>
                           <p className="text-amber-600 font-bold">{CURRENCY_SYMBOL}{item.price} × {item.quantity}</p>
@@ -2859,8 +3145,20 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
           <div className="space-y-3 mb-6">
             {cart.map(item => (
               <div key={item.id} className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
-                <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-2xl border">
-                  {item.icon || '📦'}
+                <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-2xl border overflow-hidden">
+                  {item.image ? (
+                    <img 
+                      src={item.image} 
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = `<span class="text-2xl">${item.icon || '📦'}</span>`;
+                      }}
+                    />
+                  ) : (
+                    <span className="text-2xl">{item.icon || '📦'}</span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-slate-800 text-sm truncate">{item.name}</p>
@@ -2973,8 +3271,20 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
         
         {lastScannedProduct && (
           <div className="bg-emerald-500 text-white p-4 rounded-xl flex items-center gap-3 animate-pulse">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-xl">
-              {lastScannedProduct.icon || '✓'}
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-xl overflow-hidden">
+              {lastScannedProduct.image ? (
+                <img 
+                  src={lastScannedProduct.image} 
+                  alt={lastScannedProduct.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = `<span class="text-xl">${lastScannedProduct.icon || '✓'}</span>`;
+                  }}
+                />
+              ) : (
+                <span className="text-xl">{lastScannedProduct.icon || '✓'}</span>
+              )}
             </div>
             <div className="flex-1">
               <p className="font-bold">{t.shopping.added}</p>
@@ -3007,8 +3317,20 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             <div className="divide-y max-h-64 overflow-y-auto">
               {cart.map(item => (
                 <div key={item.id} className="p-3 flex items-center gap-3">
-                  <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center text-2xl">
-                    {item.icon || '📦'}
+                  <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center text-2xl overflow-hidden">
+                    {item.image ? (
+                      <img 
+                        src={item.image} 
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerHTML = `<span class="text-2xl">${item.icon || '📦'}</span>`;
+                        }}
+                      />
+                    ) : (
+                      <span className="text-2xl">{item.icon || '📦'}</span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-slate-800 text-sm truncate">{item.name}</p>
