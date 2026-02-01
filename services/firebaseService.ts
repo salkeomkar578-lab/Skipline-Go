@@ -654,6 +654,8 @@ export const sendVerificationNotification = async (
       const txIndex = transactions.findIndex((t: any) => t.id === transactionId);
       if (txIndex >= 0) {
         transactions[txIndex].lastNotification = notificationData;
+        transactions[txIndex].status = notificationType === 'preorder_collected' ? 'PREORDER_COLLECTED' : 
+                                        notificationType === 'flagged' ? 'FLAGGED' : 'VERIFIED';
         transactions[txIndex]._notificationSent = false; // Reset to allow re-detection
         localStorage.setItem('skipline_transactions', JSON.stringify(transactions));
       }
@@ -677,9 +679,12 @@ export const sendVerificationNotification = async (
   }
   
   try {
-    // Update the transaction document with notification data
+    // Update the transaction document with notification data AND status
     const docRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
+    const newStatus = notificationType === 'preorder_collected' ? 'PREORDER_COLLECTED' : 
+                      notificationType === 'flagged' ? 'FLAGGED' : 'VERIFIED';
     await updateDoc(docRef, {
+      status: newStatus,
       notification: {
         type: notificationType,
         message,
@@ -687,34 +692,74 @@ export const sendVerificationNotification = async (
         read: false
       }
     });
-    console.log('📢 Notification sent via Firebase:', transactionId, notificationType);
+    console.log('📢 Notification sent via Firebase:', transactionId, notificationType, 'Status:', newStatus);
   } catch (error) {
     console.error('Error sending notification:', error);
   }
 };
 
 /**
+ * Subscribe to SINGLE transaction status updates (Firebase real-time)
+ * Used for cross-device verification notifications
+ */
+export const subscribeToTransactionStatus = (
+  transactionId: string,
+  callback: (transaction: Transaction | null) => void
+): (() => void) => {
+  if (isDemoMode || !db) {
+    console.log('📴 Demo mode - Firebase real-time disabled for:', transactionId);
+    // Return no-op for demo mode
+    return () => {};
+  }
+  
+  console.log('🔥 Setting up Firebase real-time listener for transaction:', transactionId);
+  
+  const docRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
+  
+  return onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const tx = { id: docSnap.id, ...docSnap.data() } as Transaction;
+      console.log('🔥 Transaction update received:', tx.id, 'Status:', tx.status);
+      callback(tx);
+    } else {
+      callback(null);
+    }
+  }, (error) => {
+    console.error('🔥 Firebase transaction listener error:', error);
+  });
+};
+
+/**
  * Subscribe to transaction notification updates
  * Customer uses this to listen for verification from staff
- * ENHANCED: Now polls more aggressively and checks multiple storage keys
+ * ENHANCED: Now uses BOTH Firebase real-time AND localStorage polling
  */
 export const subscribeToTransactionNotification = (
   transactionId: string,
   callback: (notification: { type: string; message: string } | null) => void
 ): (() => void) => {
-  // ALWAYS use localStorage polling as the primary mechanism for demo
-  // This ensures cross-browser/cross-tab sync works reliably
-  console.log('📡 Setting up enhanced notification polling for:', transactionId);
+  console.log('📡 Setting up DUAL notification system for:', transactionId);
   
   let lastCheckTime = Date.now();
+  let lastKnownStatus: string | null = null;
+  let notificationTriggered = false;
   
-  const checkNotifications = () => {
-    // Check both notification types with multiple key patterns
+  const triggerCallback = (type: string, message: string) => {
+    if (notificationTriggered) return; // Prevent duplicate triggers
+    notificationTriggered = true;
+    console.log('🎯 Triggering notification callback:', type, message);
+    callback({ type, message });
+  };
+  
+  // Check localStorage for notifications
+  const checkLocalNotifications = () => {
+    if (notificationTriggered) return;
+    
+    // Check notification keys
     const keysToCheck = [
       `qr_verified_${transactionId}`,
       `preorder_verified_${transactionId}`,
       `notification_${transactionId}`,
-      // Also check by pickup code if available
       `qr_verified_${transactionId.split('-').slice(-1)[0]}`,
     ];
     
@@ -723,14 +768,12 @@ export const subscribeToTransactionNotification = (
       if (data) {
         try {
           const parsedData = JSON.parse(data);
-          // Only process if notification is newer than last check
           if (!parsedData.processedAt || parsedData.timestamp > lastCheckTime - 1000) {
-            console.log('📬 Found notification:', key, parsedData);
+            console.log('📬 Found localStorage notification:', key, parsedData);
             localStorage.removeItem(key);
-            // Mark as processed
             parsedData.processedAt = Date.now();
-            callback(parsedData);
-            return; // Process one notification at a time
+            triggerCallback(parsedData.type, parsedData.message);
+            return;
           }
         } catch (e) {
           console.error('Parse error for key', key, ':', e);
@@ -739,30 +782,29 @@ export const subscribeToTransactionNotification = (
       }
     }
     
-    // Also check the transactions storage directly for status changes
+    // Check transactions storage for status changes
     const txData = localStorage.getItem('skipline_transactions');
     if (txData) {
       try {
         const transactions = JSON.parse(txData);
         const tx = transactions.find((t: any) => t.id === transactionId);
-        if (tx) {
-          // Check if status changed to VERIFIED or PREORDER_COLLECTED
+        if (tx && tx.status !== lastKnownStatus) {
+          lastKnownStatus = tx.status;
           if (tx.status === 'VERIFIED' && !tx._notificationSent) {
-            console.log('📬 Detected VERIFIED status for:', transactionId);
-            callback({ type: 'success', message: 'Gate released! You may exit.' });
-            // Mark notification as sent
+            console.log('📬 Detected VERIFIED status in localStorage:', transactionId);
             tx._notificationSent = true;
             localStorage.setItem('skipline_transactions', JSON.stringify(transactions));
+            triggerCallback('success', 'Gate released! You may exit.');
           } else if (tx.status === 'PREORDER_COLLECTED' && !tx._notificationSent) {
-            console.log('📬 Detected PREORDER_COLLECTED status for:', transactionId);
-            callback({ type: 'success', message: 'Order collected successfully!' });
+            console.log('📬 Detected PREORDER_COLLECTED status in localStorage:', transactionId);
             tx._notificationSent = true;
             localStorage.setItem('skipline_transactions', JSON.stringify(transactions));
+            triggerCallback('success', 'Order collected successfully!');
           } else if (tx.status === 'FLAGGED' && !tx._notificationSent) {
-            console.log('📬 Detected FLAGGED status for:', transactionId);
-            callback({ type: 'flagged', message: 'Please proceed to customer service.' });
+            console.log('📬 Detected FLAGGED status in localStorage:', transactionId);
             tx._notificationSent = true;
             localStorage.setItem('skipline_transactions', JSON.stringify(transactions));
+            triggerCallback('flagged', 'Please proceed to customer service.');
           }
         }
       } catch (e) {
@@ -773,23 +815,70 @@ export const subscribeToTransactionNotification = (
     lastCheckTime = Date.now();
   };
   
-  // Poll every 300ms for faster response (was 500ms)
-  const interval = setInterval(checkNotifications, 300);
+  // Poll localStorage every 300ms for same-browser sync
+  const localInterval = setInterval(checkLocalNotifications, 300);
   
-  // Also listen for storage events for instant cross-tab sync
+  // Listen for storage events for instant cross-tab sync
   const storageHandler = (e: StorageEvent) => {
     if (e.key?.includes(transactionId) || e.key === 'skipline_transactions') {
       console.log('📡 Storage event detected, checking notifications');
-      setTimeout(checkNotifications, 50); // Small delay to ensure data is written
+      setTimeout(checkLocalNotifications, 50);
     }
   };
   window.addEventListener('storage', storageHandler);
   
-  // Initial check
-  checkNotifications();
+  // FIREBASE REAL-TIME: Subscribe to transaction document changes
+  // This enables cross-device/cross-account verification
+  let unsubscribeFirebase: (() => void) | null = null;
   
+  if (!isDemoMode && db) {
+    console.log('🔥 Setting up Firebase real-time listener for:', transactionId);
+    const docRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
+    
+    unsubscribeFirebase = onSnapshot(docRef, (docSnap) => {
+      if (notificationTriggered) return;
+      
+      if (docSnap.exists()) {
+        const tx = docSnap.data();
+        console.log('🔥 Firebase transaction update:', transactionId, 'Status:', tx.status, 'Notification:', tx.notification);
+        
+        // Check for status change
+        if (tx.status !== lastKnownStatus) {
+          lastKnownStatus = tx.status;
+          
+          if (tx.status === 'VERIFIED') {
+            console.log('🔥 Firebase: VERIFIED status detected');
+            triggerCallback('success', tx.notification?.message || 'Gate released! You may exit.');
+          } else if (tx.status === 'PREORDER_COLLECTED') {
+            console.log('🔥 Firebase: PREORDER_COLLECTED status detected');
+            triggerCallback('success', tx.notification?.message || 'Order collected successfully!');
+          } else if (tx.status === 'FLAGGED') {
+            console.log('🔥 Firebase: FLAGGED status detected');
+            triggerCallback('flagged', tx.notification?.message || 'Please proceed to customer service.');
+          }
+        }
+        
+        // Also check notification field
+        if (tx.notification && !tx.notification.read) {
+          const notifType = tx.notification.type === 'flagged' ? 'flagged' : 'success';
+          console.log('🔥 Firebase notification found:', tx.notification);
+          triggerCallback(notifType, tx.notification.message);
+        }
+      }
+    }, (error) => {
+      console.error('🔥 Firebase listener error:', error);
+    });
+  }
+  
+  // Initial check
+  checkLocalNotifications();
+  
+  // Cleanup function
   return () => {
-    clearInterval(interval);
+    clearInterval(localInterval);
     window.removeEventListener('storage', storageHandler);
+    if (unsubscribeFirebase) {
+      unsubscribeFirebase();
+    }
   };
 };

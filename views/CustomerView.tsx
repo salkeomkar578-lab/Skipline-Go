@@ -31,7 +31,9 @@ import {
 import { 
   saveScannedProduct, 
   saveTransactionToFirebase,
-  subscribeToTransactionNotification 
+  subscribeToTransactionNotification,
+  subscribeToTransactionStatus,
+  getTransaction
 } from '../services/firebaseService';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
@@ -445,6 +447,9 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   const [pickupConfirmed, setPickupConfirmed] = useState(false);
   const [pickupCountdown, setPickupCountdown] = useState(5);
   
+  // Track if preorder QR is disabled (after verification)
+  const [preorderQRDisabled, setPreorderQRDisabled] = useState(false);
+  
   // Verification notification popup (real-time)
   const [verificationPopup, setVerificationPopup] = useState<{
     show: boolean;
@@ -538,17 +543,21 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     return () => unsubscribe();
   }, [completedTransaction]);
 
-  // Listen for PREORDER pickup verification from staff - Firebase real-time
+  // Listen for PREORDER pickup verification from staff - Firebase real-time + localStorage
   useEffect(() => {
     if (!preorderTransaction || viewState !== 'PREORDER_QR') return;
+    if (pickupConfirmed) return; // Already confirmed, don't re-subscribe
     
-    console.log('🔔 Setting up Firebase notification listener for preorder:', preorderTransaction.id);
+    console.log('🔔 Setting up DUAL notification listener for preorder:', preorderTransaction.id);
     
-    // Subscribe to Firebase notification updates
+    // Subscribe to both Firebase real-time AND localStorage polling
     const unsubscribe = subscribeToTransactionNotification(preorderTransaction.id, (notification) => {
       if (!notification) return;
       
-      console.log('✅ Preorder pickup verified by staff via Firebase:', notification);
+      console.log('✅ Preorder pickup verified by staff:', notification);
+      
+      // DISABLE QR CODE IMMEDIATELY
+      setPreorderQRDisabled(true);
       
       // Update local transaction status
       const updatedTx = { ...preorderTransaction, status: 'PREORDER_COLLECTED' };
@@ -559,20 +568,44 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
         prev.map(t => t.id === preorderTransaction.id ? { ...t, status: 'PREORDER_COLLECTED' } : t)
       );
       
-      // Show pickup confirmed state
+      // Show pickup confirmed SUCCESS SCREEN
       setPickupConfirmed(true);
       setPickupCountdown(5);
     });
     
-    return () => unsubscribe();
-  }, [preorderTransaction, viewState]);
+    // Also poll Firebase directly every 2 seconds for cross-device sync
+    const firebasePollInterval = setInterval(async () => {
+      if (pickupConfirmed || preorderQRDisabled) return;
+      
+      try {
+        const tx = await getTransaction(preorderTransaction.id);
+        if (tx && tx.status === 'PREORDER_COLLECTED') {
+          console.log('🔄 Firebase poll: Order collected detected');
+          setPreorderQRDisabled(true);
+          setPreorderTransaction(prev => prev ? { ...prev, status: 'PREORDER_COLLECTED' } : prev);
+          setTransactionHistory(prev => 
+            prev.map(t => t.id === preorderTransaction.id ? { ...t, status: 'PREORDER_COLLECTED' } : t)
+          );
+          setPickupConfirmed(true);
+          setPickupCountdown(5);
+        }
+      } catch (e) {
+        console.log('Firebase poll check skipped (offline mode)');
+      }
+    }, 2000);
+    
+    return () => {
+      unsubscribe();
+      clearInterval(firebasePollInterval);
+    };
+  }, [preorderTransaction, viewState, pickupConfirmed, preorderQRDisabled]);
 
   // Listen for verification when viewing from history
   useEffect(() => {
     if (!viewingPreorder || viewState !== 'VIEW_PREORDER_QR') return;
     if (viewingPreorder.status === 'PREORDER_COLLECTED') return; // Already collected
     
-    console.log('🔔 Setting up Firebase notification listener for saved preorder:', viewingPreorder.id);
+    console.log('🔔 Setting up DUAL notification listener for saved preorder:', viewingPreorder.id);
     
     const unsubscribe = subscribeToTransactionNotification(viewingPreorder.id, (notification) => {
       if (!notification) return;
@@ -590,6 +623,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       // Show pickup confirmed state - redirect to success
       setPickupConfirmed(true);
       setPickupCountdown(5);
+      setPreorderQRDisabled(true);
       setViewState('PREORDER_QR');
       setPreorderTransaction({
         id: viewingPreorder.id,
@@ -601,7 +635,40 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       });
     });
     
-    return () => unsubscribe();
+    // Also poll Firebase directly every 2 seconds for cross-device sync
+    const firebasePollInterval = setInterval(async () => {
+      if (viewingPreorder.status === 'PREORDER_COLLECTED') return;
+      
+      try {
+        const tx = await getTransaction(viewingPreorder.id);
+        if (tx && tx.status === 'PREORDER_COLLECTED') {
+          console.log('🔄 Firebase poll (history view): Order collected detected');
+          setViewingPreorder(prev => prev ? { ...prev, status: 'PREORDER_COLLECTED' } : null);
+          setTransactionHistory(prev => 
+            prev.map(t => t.id === viewingPreorder.id ? { ...t, status: 'PREORDER_COLLECTED' } : t)
+          );
+          setPickupConfirmed(true);
+          setPickupCountdown(5);
+          setPreorderQRDisabled(true);
+          setViewState('PREORDER_QR');
+          setPreorderTransaction({
+            id: viewingPreorder.id,
+            items: viewingPreorder.items || [],
+            total: viewingPreorder.total,
+            mall: viewingPreorder.preorderMall || viewingPreorder.branch || '',
+            timestamp: viewingPreorder.timestamp,
+            pickupCode: viewingPreorder.preorderPickupCode || ''
+          });
+        }
+      } catch (e) {
+        console.log('Firebase poll check skipped (offline mode)');
+      }
+    }, 2000);
+    
+    return () => {
+      unsubscribe();
+      clearInterval(firebasePollInterval);
+    };
   }, [viewingPreorder, viewState]);
   
   // Global listener: Check for verification updates on ALL pending preorders
@@ -2294,34 +2361,58 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     }
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 safe-area-inset pb-24">
+      <div className={`min-h-screen safe-area-inset pb-24 ${
+        preorderQRDisabled 
+          ? 'bg-gradient-to-br from-emerald-600 via-green-600 to-teal-600'
+          : 'bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600'
+      }`}>
         <div className="max-w-lg mx-auto p-4 pt-6">
           {/* Success Animation Header */}
           <div className="text-center mb-6">
             <div className="relative w-24 h-24 mx-auto mb-4">
-              <div className="absolute inset-0 bg-white/30 rounded-full animate-ping" />
+              <div className={`absolute inset-0 rounded-full animate-ping ${preorderQRDisabled ? 'bg-white/30' : 'bg-white/30'}`} />
               <div className="relative w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl">
-                <CheckCircle className="w-12 h-12 text-emerald-500" />
+                {preorderQRDisabled ? (
+                  <ShieldCheck className="w-12 h-12 text-emerald-500" />
+                ) : (
+                  <CheckCircle className="w-12 h-12 text-emerald-500" />
+                )}
               </div>
             </div>
-            <h1 className="text-3xl font-black text-white">Order Confirmed!</h1>
-            <p className="text-white/80 text-sm mt-1">Show this code at pickup counter</p>
+            <h1 className="text-3xl font-black text-white">
+              {preorderQRDisabled ? '🎉 Pickup Complete!' : 'Order Confirmed!'}
+            </h1>
+            <p className="text-white/80 text-sm mt-1">
+              {preorderQRDisabled ? 'Your items have been collected' : 'Show this code at pickup counter'}
+            </p>
           </div>
           
-          {/* Waiting for Pickup Status */}
-          <div className="bg-amber-400/90 rounded-2xl p-4 mb-4 flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center animate-pulse">
-              <Clock className="w-5 h-5 text-white" />
+          {/* Status Banner - Changes based on verification */}
+          {preorderQRDisabled ? (
+            <div className="bg-emerald-400/90 rounded-2xl p-4 mb-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-emerald-900 font-bold text-sm">✅ Items Collected</p>
+                <p className="text-emerald-800 text-xs">QR code is now disabled</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="text-amber-900 font-bold text-sm">Waiting for Pickup</p>
-              <p className="text-amber-800 text-xs">QR valid for 5 mins - regenerate if expired</p>
+          ) : (
+            <div className="bg-amber-400/90 rounded-2xl p-4 mb-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center animate-pulse">
+                <Clock className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-amber-900 font-bold text-sm">Waiting for Pickup</p>
+                <p className="text-amber-800 text-xs">QR valid for 5 mins - regenerate if expired</p>
+              </div>
             </div>
-          </div>
+          )}
           
-          {/* PREORDER QR CODE - Main Focus with Timer */}
-          <div className="bg-white rounded-3xl p-6 shadow-2xl mb-4">
-            {preorderTransaction && (
+          {/* PREORDER QR CODE - Main Focus with Timer (DISABLED WHEN VERIFIED) */}
+          <div className={`bg-white rounded-3xl p-6 shadow-2xl mb-4 ${preorderQRDisabled ? 'opacity-50' : ''}`}>
+            {preorderTransaction && !preorderQRDisabled && (
               <PreorderQRCode 
                 key={`qr-${preorderTransaction.id}-${preorderTransaction.pickupCode}`}
                 transaction={{
@@ -2335,38 +2426,52 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               />
             )}
             
-            {/* Copy Button */}
-            <div className="mt-4 flex justify-center">
-              <button
-                onClick={() => {
-                  const code = preorderTransaction?.pickupCode || '';
-                  navigator.clipboard.writeText(code).then(() => {
-                    setCopySuccess(true);
-                    setTimeout(() => setCopySuccess(false), 2000);
-                  }).catch(() => {
-                    const textArea = document.createElement('textarea');
-                    textArea.value = code;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    setCopySuccess(true);
-                    setTimeout(() => setCopySuccess(false), 2000);
-                  });
-                }}
-                className={`px-8 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${
-                  copySuccess 
-                    ? 'bg-emerald-500 text-white' 
-                    : 'bg-purple-100 text-purple-700 hover:bg-purple-200 active:scale-95'
-                }`}
-              >
-                {copySuccess ? (
-                  <><CheckCircle className="w-5 h-5" /> Copied!</>
-                ) : (
-                  <><Copy className="w-5 h-5" /> Copy Code</>
-                )}
-              </button>
-            </div>
+            {/* Show VERIFIED message instead of QR when collected */}
+            {preorderQRDisabled && (
+              <div className="text-center py-8">
+                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ShieldCheck className="w-10 h-10 text-emerald-500" />
+                </div>
+                <h3 className="text-xl font-bold text-emerald-600 mb-2">Verification Complete</h3>
+                <p className="text-slate-500 text-sm">QR code generation is disabled</p>
+                <p className="text-slate-400 text-xs mt-2">Code: {preorderTransaction?.pickupCode}</p>
+              </div>
+            )}
+            
+            {/* Copy Button - DISABLED when verified */}
+            {!preorderQRDisabled && (
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => {
+                    const code = preorderTransaction?.pickupCode || '';
+                    navigator.clipboard.writeText(code).then(() => {
+                      setCopySuccess(true);
+                      setTimeout(() => setCopySuccess(false), 2000);
+                    }).catch(() => {
+                      const textArea = document.createElement('textarea');
+                      textArea.value = code;
+                      document.body.appendChild(textArea);
+                      textArea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textArea);
+                      setCopySuccess(true);
+                      setTimeout(() => setCopySuccess(false), 2000);
+                    });
+                  }}
+                  className={`px-8 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${
+                    copySuccess 
+                      ? 'bg-emerald-500 text-white' 
+                      : 'bg-purple-100 text-purple-700 hover:bg-purple-200 active:scale-95'
+                  }`}
+                >
+                  {copySuccess ? (
+                    <><CheckCircle className="w-5 h-5" /> Copied!</>
+                  ) : (
+                    <><Copy className="w-5 h-5" /> Copy Code</>
+                  )}
+                </button>
+              </div>
+            )}
             
             {/* Order Summary */}
             <div className="mt-4 pt-4 border-t border-slate-200 space-y-2 text-sm">
@@ -2438,22 +2543,49 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
           
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button
-              onClick={() => {
-                setPreorderCart([]);
-                setPreorderTransaction(null);
-                setViewState('MODE_SELECT');
-              }}
-              className="w-full bg-white text-purple-600 py-4 rounded-xl font-bold shadow-lg active:scale-95 transition-transform"
-            >
-              Done - Back to Home
-            </button>
-            <button
-              onClick={() => setViewState('HISTORY')}
-              className="w-full bg-white/20 text-white py-3 rounded-xl font-bold active:bg-white/30 transition-colors"
-            >
-              View Order History
-            </button>
+            {preorderQRDisabled ? (
+              <>
+                <button
+                  onClick={() => {
+                    setPreorderQRDisabled(false);
+                    setPreorderCart([]);
+                    setPreorderTransaction(null);
+                    setViewState('MODE_SELECT');
+                  }}
+                  className="w-full bg-white text-emerald-600 py-4 rounded-xl font-bold shadow-lg active:scale-95 transition-transform"
+                >
+                  🛒 Continue Shopping
+                </button>
+                <button
+                  onClick={() => {
+                    setPreorderQRDisabled(false);
+                    setViewState('HISTORY');
+                  }}
+                  className="w-full bg-white/20 text-white py-3 rounded-xl font-bold active:bg-white/30 transition-colors"
+                >
+                  View Order History
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    setPreorderCart([]);
+                    setPreorderTransaction(null);
+                    setViewState('MODE_SELECT');
+                  }}
+                  className="w-full bg-white text-purple-600 py-4 rounded-xl font-bold shadow-lg active:scale-95 transition-transform"
+                >
+                  Done - Back to Home
+                </button>
+                <button
+                  onClick={() => setViewState('HISTORY')}
+                  className="w-full bg-white/20 text-white py-3 rounded-xl font-bold active:bg-white/30 transition-colors"
+                >
+                  View Order History
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
