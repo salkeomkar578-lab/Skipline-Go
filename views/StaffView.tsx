@@ -73,20 +73,54 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [pendingCollectTx, setPendingCollectTx] = useState<Transaction | null>(null);
   
+  // Preorder collection success animation state
+  const [preorderCollectionSuccess, setPreorderCollectionSuccess] = useState(false);
+  const [collectedOrderInfo, setCollectedOrderInfo] = useState<{ code: string; total: number } | null>(null);
+  
   // History tab state
   const [historyTab, setHistoryTab] = useState<HistoryTab>('OFFLINE');
 
   // Subscribe to transaction updates from Firebase (real-time sync across devices)
+  // Also auto-refresh from localStorage every 2 seconds
   useEffect(() => {
     console.log('📡 Subscribing to Firebase transactions...');
     const unsubscribe = subscribeToFirebaseTransactions((txs) => {
       console.log('📦 Received', txs.length, 'transactions from Firebase');
-      setTransactions(txs);
+      // Merge with local transactions
+      const localTxs = getAllTransactions();
+      const merged = [...txs];
+      localTxs.forEach(localTx => {
+        if (!merged.find(t => t.id === localTx.id)) {
+          merged.push(localTx);
+        }
+      });
+      setTransactions(merged);
       setStats(getTransactionStats());
     });
+    
+    // Also poll localStorage every 2 seconds for guest/offline transactions
+    const pollInterval = setInterval(() => {
+      const localTxs = getAllTransactions();
+      setTransactions(prev => {
+        const merged = [...prev];
+        localTxs.forEach(localTx => {
+          const idx = merged.findIndex(t => t.id === localTx.id);
+          if (idx >= 0) {
+            // Update existing transaction with latest status
+            merged[idx] = localTx;
+          } else {
+            merged.push(localTx);
+          }
+        });
+        return merged;
+      });
+      setStats(getTransactionStats());
+    }, 2000);
+    
     return () => {
       console.log('📡 Unsubscribing from Firebase transactions');
       unsubscribe();
+      clearInterval(pollInterval);
     };
   }, []);
 
@@ -988,6 +1022,20 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
                   }
                 });
                 
+                // Also check guest pickup mappings (for orders placed before login)
+                try {
+                  const guestPickups = JSON.parse(localStorage.getItem('skipline_guest_pickups') || '[]');
+                  guestPickups.forEach((mapping: { pickupCode: string; txId: string }) => {
+                    const existingTx = allTransactions.find(tx => tx.id === mapping.txId);
+                    if (existingTx && !existingTx.preorderPickupCode) {
+                      existingTx.preorderPickupCode = mapping.pickupCode;
+                    }
+                  });
+                  console.log('📋 Guest pickup mappings:', guestPickups.length);
+                } catch (e) {
+                  console.warn('Could not read guest pickup mappings:', e);
+                }
+                
                 const freshPreorders = allTransactions.filter(tx => tx.isPreorder === true);
                 
                 console.log('🔍 Searching for code:', preorderCode.trim());
@@ -1110,6 +1158,30 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
               )}
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================
+  // PREORDER COLLECTION SUCCESS ANIMATION
+  // ============================================
+  if (preorderCollectionSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-emerald-800 to-green-900 flex items-center justify-center">
+        <div className="text-center animate-pulse">
+          <div className="w-32 h-32 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-emerald-500/50">
+            <CheckCircle2 className="w-16 h-16 text-white" />
+          </div>
+          <h2 className="text-3xl font-black text-white mb-2">✅ Collection Confirmed!</h2>
+          {collectedOrderInfo && (
+            <div className="bg-white/20 rounded-xl p-4 mt-4 mx-4">
+              <p className="text-emerald-200 text-lg">Pickup Code: <span className="font-mono font-bold text-white">{collectedOrderInfo.code}</span></p>
+              <p className="text-emerald-200 mt-2">Total: <span className="font-bold text-white">₹{collectedOrderInfo.total.toFixed(0)}</span></p>
+            </div>
+          )}
+          <p className="text-emerald-300 text-lg mt-4">Customer has been notified 📱</p>
+          <p className="text-emerald-400 text-sm mt-2">Returning to scanner...</p>
         </div>
       </div>
     );
@@ -1284,6 +1356,12 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
                 <div className="space-y-2">
                   <button
                     onClick={async () => {
+                      // Store info for success display
+                      const orderInfo = {
+                        code: pendingCollectTx.preorderPickupCode || 'N/A',
+                        total: pendingCollectTx.total
+                      };
+                      
                       // Mark as collected in Firebase
                       await updateFirebaseTransactionStatus(pendingCollectTx.id, 'PREORDER_COLLECTED', 'STAFF-001');
                       
@@ -1294,12 +1372,20 @@ export const StaffView: React.FC<StaffViewProps> = ({ onExit }) => {
                       await sendVerificationNotification(pendingCollectTx.id, 'preorder_collected', 'Order collected successfully!');
                       console.log('📢 Preorder pickup notification sent to customer');
                       
-                      setPreorderVerification({ 
-                        status: 'FOUND', 
-                        transaction: { ...pendingCollectTx, status: 'PREORDER_COLLECTED' }
-                      });
+                      // Close popup and show success animation
                       setShowConfirmPopup(false);
                       setPendingCollectTx(null);
+                      setCollectedOrderInfo(orderInfo);
+                      setPreorderCollectionSuccess(true);
+                      
+                      // Auto-hide success after 3 seconds and go back to scanner
+                      setTimeout(() => {
+                        setPreorderCollectionSuccess(false);
+                        setCollectedOrderInfo(null);
+                        setPreorderVerification({ status: 'IDLE' });
+                        setPreorderCode('');
+                        setViewMode('PREORDER_SCANNER');
+                      }, 3000);
                     }}
                     className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2"
                   >

@@ -422,12 +422,24 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     pickupCode: string;
   } | null>(null);
   
-  // QR Verification notification state
+  // QR Verification notification state - ENHANCED for visibility
   const [qrVerifiedNotification, setQrVerifiedNotification] = useState<{
     show: boolean;
     message: string;
     type: 'success' | 'flagged';
   }>({ show: false, message: '', type: 'success' });
+
+  // Force refresh for pending orders list
+  const [forceRefresh, setForceRefresh] = useState(0);
+  
+  // Auto-refresh transactions every 2 seconds for real-time updates
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      const allTx = getAllTransactions();
+      setTransactionHistory(allTx.filter(t => t.userId === userId || t.isPreorder));
+    }, 2000);
+    return () => clearInterval(refreshInterval);
+  }, [userId]);
 
   // Preorder pickup confirmed state
   const [pickupConfirmed, setPickupConfirmed] = useState(false);
@@ -875,42 +887,33 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   });
 
   // ============================================
-  // MODE SELECTION VIEW - Home Screen
+  // MODE SELECTION VIEW - Home Screen (Optimized for Mobile)
   // ============================================
   if (viewState === 'MODE_SELECT') {
     return (
       <div className="min-h-screen bg-[#0a0a0f] p-4 safe-area-inset relative overflow-hidden">
-        {/* Premium Animated Background */}
-        <div className="animated-bg-container">
-          {/* Aurora gradient layers */}
-          <div className="aurora-layer aurora-1" />
-          <div className="aurora-layer aurora-2" />
-          <div className="aurora-layer aurora-3" />
+        {/* Lightweight Background - Optimized for mobile performance */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Simple gradient background instead of heavy animations */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-slate-900 to-indigo-900/20" />
           
-          {/* Animated mesh grid */}
-          <div className="mesh-grid" />
-          
-          {/* Floating particles */}
-          <div className="floating-particles">
-            {[...Array(20)].map((_, i) => (
-              <div key={i} className={`particle particle-${i + 1}`} />
+          {/* Reduced particles - only 6 instead of 20 */}
+          <div className="absolute inset-0">
+            {[...Array(6)].map((_, i) => (
+              <div 
+                key={i} 
+                className="absolute w-1 h-1 bg-white/20 rounded-full animate-pulse"
+                style={{
+                  left: `${15 + i * 15}%`,
+                  top: `${20 + (i % 3) * 25}%`,
+                  animationDelay: `${i * 0.5}s`
+                }}
+              />
             ))}
           </div>
           
-          {/* Star field */}
-          <div className="star-field">
-            {[...Array(30)].map((_, i) => (
-              <div key={i} className={`star star-${(i % 3) + 1}`} style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`
-              }} />
-            ))}
-          </div>
-          
-          {/* Glowing orb accent */}
-          <div className="glow-orb glow-orb-1" />
-          <div className="glow-orb glow-orb-2" />
+          {/* Single subtle glow */}
+          <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
         </div>
         
         <div className="max-w-md mx-auto pt-6 pb-24 relative z-10">
