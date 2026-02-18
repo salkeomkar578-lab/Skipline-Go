@@ -78,6 +78,7 @@ const MALL_BRANCHES = [
   { id: 'city_center_baramati', name: 'City Center Mall', location: 'Baramati', city: 'baramati', wifi: 'SkiplineGo-CityCenter-Baramati', signal: 'Excellent', address: 'Market Yard Road, Baramati', rating: 4.1, timing: '10 AM - 10 PM' },
   { id: 'star_bazaar_baramati', name: 'Star Bazaar', location: 'Baramati', city: 'baramati', wifi: 'SkiplineGo-StarBazaar-Baramati', signal: 'Good', address: 'Pune-Solapur Highway, Baramati', rating: 3.9, timing: '9 AM - 9 PM' },
   { id: 'more_supermarket_baramati', name: 'More Supermarket', location: 'Baramati', city: 'baramati', wifi: 'SkiplineGo-More-Baramati', signal: 'Good', address: 'Nira Road, Baramati', rating: 4.0, timing: '8 AM - 10 PM' },
+  { id: 'ajinkya_bazar_baramati', name: 'Ajinkya Bazar Mall', location: 'Baramati', city: 'baramati', wifi: 'SkiplineGo-Ajinkya-Baramati', signal: 'Excellent', address: 'Main Road, Baramati', rating: 4.3, timing: '10 AM - 10 PM' },
 ];
 
 // Generate Invoice HTML
