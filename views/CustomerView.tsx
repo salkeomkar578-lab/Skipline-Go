@@ -58,6 +58,7 @@ const CITIES = [
   { id: 'hyderabad', name: 'Hyderabad', state: 'Telangana', icon: '🕌' },
   { id: 'chennai', name: 'Chennai', state: 'Tamil Nadu', icon: '🛕' },
   { id: 'pune', name: 'Pune', state: 'Maharashtra', icon: '⛰️' },
+  { id: 'baramati', name: 'Baramati', state: 'Maharashtra', icon: '🌾' },
 ];
 
 // Mall branches for WiFi demo with city mapping
@@ -71,6 +72,12 @@ const MALL_BRANCHES = [
   { id: 'inorbit_hyd', name: 'Inorbit Mall', location: 'Hyderabad', city: 'hyderabad', wifi: 'SkiplineGo-Inorbit-HYD', signal: 'Good', address: 'Hitech City, Hyderabad', rating: 4.3, timing: '10 AM - 9 PM' },
   { id: 'express', name: 'Express Avenue', location: 'Chennai', city: 'chennai', wifi: 'SkiplineGo-Express', signal: 'Excellent', address: 'Royapettah, Chennai', rating: 4.2, timing: '10 AM - 10 PM' },
   { id: 'seasons', name: 'Seasons Mall', location: 'Pune', city: 'pune', wifi: 'SkiplineGo-Seasons', signal: 'Good', address: 'Magarpatta, Pune', rating: 4.1, timing: '10 AM - 9 PM' },
+  // Baramati Stores
+  { id: 'dmart_baramati', name: 'D-Mart Baramati', location: 'Baramati', city: 'baramati', wifi: 'SkiplineGo-DMart-Baramati', signal: 'Good', address: 'Station Road, Baramati', rating: 4.2, timing: '9 AM - 10 PM' },
+  { id: 'reliance_baramati', name: 'Reliance Smart', location: 'Baramati', city: 'baramati', wifi: 'SkiplineGo-Reliance-Baramati', signal: 'Good', address: 'Bhigwan Road, Baramati', rating: 4.0, timing: '9 AM - 9 PM' },
+  { id: 'city_center_baramati', name: 'City Center Mall', location: 'Baramati', city: 'baramati', wifi: 'SkiplineGo-CityCenter-Baramati', signal: 'Excellent', address: 'Market Yard Road, Baramati', rating: 4.1, timing: '10 AM - 10 PM' },
+  { id: 'star_bazaar_baramati', name: 'Star Bazaar', location: 'Baramati', city: 'baramati', wifi: 'SkiplineGo-StarBazaar-Baramati', signal: 'Good', address: 'Pune-Solapur Highway, Baramati', rating: 3.9, timing: '9 AM - 9 PM' },
+  { id: 'more_supermarket_baramati', name: 'More Supermarket', location: 'Baramati', city: 'baramati', wifi: 'SkiplineGo-More-Baramati', signal: 'Good', address: 'Nira Road, Baramati', rating: 4.0, timing: '8 AM - 10 PM' },
 ];
 
 // Generate Invoice HTML
@@ -1566,12 +1573,47 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   <p className="text-slate-400 text-xs flex items-center gap-1 mt-1">
                     <MapPin className="w-3 h-3" /> {product.aisle}
                   </p>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); addToPreorder(product); }}
-                    className="add-cart-btn mt-2 w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] active:scale-95"
-                  >
-                    + Add to Cart
-                  </button>
+                  {/* Quantity Management for Products in Cart */}
+                  {(() => {
+                    const cartItem = preorderCart.find(p => p.id === product.id);
+                    if (cartItem) {
+                      return (
+                        <div className="mt-2 flex items-center justify-between bg-amber-50 rounded-xl p-1.5">
+                          <button
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setPreorderCart(prev => prev.map(p => 
+                                p.id === product.id ? { ...p, quantity: Math.max(1, p.quantity - 1) } : p
+                              ).filter(p => p.quantity > 0));
+                            }}
+                            className="w-8 h-8 bg-amber-500 text-white rounded-lg flex items-center justify-center font-bold text-lg hover:bg-amber-600 transition-colors"
+                          >
+                            −
+                          </button>
+                          <span className="font-bold text-amber-700 text-sm">{cartItem.quantity} in cart</span>
+                          <button
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setPreorderCart(prev => prev.map(p => 
+                                p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
+                              ));
+                            }}
+                            className="w-8 h-8 bg-amber-500 text-white rounded-lg flex items-center justify-center font-bold text-lg hover:bg-amber-600 transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                      );
+                    }
+                    return (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); addToPreorder(product); }}
+                        className="add-cart-btn mt-2 w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] active:scale-95"
+                      >
+                        + Add to Cart
+                      </button>
+                    );
+                  })()}
                 </div>
               );
             })}
@@ -1743,12 +1785,66 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                 </div>
               )}
               
-              <button
-                onClick={() => { addToPreorder(selectedProduct); setSelectedProduct(null); }}
-                className="w-full bg-amber-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-amber-600 transition-colors"
-              >
-                Add to Preorder Cart
-              </button>
+              {/* Quantity Management in Product Detail Modal */}
+              {(() => {
+                const cartItem = preorderCart.find(p => p.id === selectedProduct.id);
+                if (cartItem) {
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center gap-6 bg-amber-50 rounded-xl p-4">
+                        <button
+                          onClick={() => {
+                            if (cartItem.quantity === 1) {
+                              setPreorderCart(prev => prev.filter(p => p.id !== selectedProduct.id));
+                            } else {
+                              setPreorderCart(prev => prev.map(p => 
+                                p.id === selectedProduct.id ? { ...p, quantity: p.quantity - 1 } : p
+                              ));
+                            }
+                          }}
+                          className="w-12 h-12 bg-amber-500 text-white rounded-xl flex items-center justify-center font-bold text-2xl hover:bg-amber-600 transition-colors shadow-md"
+                        >
+                          −
+                        </button>
+                        <div className="text-center">
+                          <span className="font-black text-3xl text-amber-700">{cartItem.quantity}</span>
+                          <p className="text-amber-600 text-xs font-medium">in cart</p>
+                        </div>
+                        <button
+                          onClick={() => setPreorderCart(prev => prev.map(p => 
+                            p.id === selectedProduct.id ? { ...p, quantity: p.quantity + 1 } : p
+                          ))}
+                          className="w-12 h-12 bg-amber-500 text-white rounded-xl flex items-center justify-center font-bold text-2xl hover:bg-amber-600 transition-colors shadow-md"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setSelectedProduct(null)}
+                          className="flex-1 bg-slate-100 text-slate-700 py-4 rounded-xl font-bold text-lg hover:bg-slate-200 transition-colors"
+                        >
+                          Continue Shopping
+                        </button>
+                        <button
+                          onClick={() => { setSelectedProduct(null); setShowPreorderModal(true); }}
+                          className="flex-1 bg-emerald-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-emerald-600 transition-colors"
+                        >
+                          View Cart
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <button
+                    onClick={() => { addToPreorder(selectedProduct); }}
+                    className="w-full bg-amber-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-amber-600 transition-colors"
+                  >
+                    Add to Preorder Cart
+                  </button>
+                );
+              })()}
             </div>
           </div>
         )}
