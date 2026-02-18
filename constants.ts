@@ -8,57 +8,56 @@ import { Product } from './types';
 // ==================== PRODUCT CATALOG ====================
 // Using real product images from Open Food Facts and reliable CDN sources
 
-// Real product image URLs 
-// Open Food Facts URLs: https://images.openfoodfacts.org/images/products/[barcode]/front.X.400.jpg
-// For Indian products, using high-quality stock images that represent the product category
+// Real product image URLs - Using verified working CDN sources
 const PRODUCT_IMAGES: Record<string, string> = {
-  // Dairy - Real product category images
-  'amul-milk': 'https://images.openfoodfacts.org/images/products/890/103/066/3428/front_en.3.400.jpg',
-  'amul-butter': 'https://images.openfoodfacts.org/images/products/890/180/002/2007/front_en.7.400.jpg',
-  'mother-dairy-curd': 'https://images.openfoodfacts.org/images/products/890/500/100/0111/front_en.4.400.jpg',
-  'amul-cheese': 'https://images.openfoodfacts.org/images/products/890/103/068/1002/front_en.5.400.jpg',
-  // Noodles - Real instant noodles images from Open Food Facts
-  'maggi': 'https://images.openfoodfacts.org/images/products/890/105/800/0106/front_en.3.400.jpg',
-  'yippee': 'https://images.openfoodfacts.org/images/products/890/210/200/2004/front_en.3.400.jpg',
-  'top-ramen': 'https://images.openfoodfacts.org/images/products/070/662/091/0213/front_en.3.400.jpg',
-  // Beverages - Real tea, coffee, juice, cola
-  'tata-tea': 'https://images.openfoodfacts.org/images/products/890/149/110/1831/front_en.3.400.jpg',
-  'nescafe': 'https://images.openfoodfacts.org/images/products/761/303/095/6134/front_en.11.400.jpg',
-  'real-juice': 'https://images.openfoodfacts.org/images/products/890/200/400/1040/front_en.3.400.jpg',
-  'coca-cola': 'https://images.openfoodfacts.org/images/products/544/900/021/4799/front_en.326.400.jpg',
-  // Snacks - Real biscuits, chips, namkeen
-  'parle-g': 'https://images.openfoodfacts.org/images/products/890/112/700/1019/front_en.3.400.jpg',
-  'britannia': 'https://images.openfoodfacts.org/images/products/890/106/300/4806/front_en.3.400.jpg',
-  'lays': 'https://images.openfoodfacts.org/images/products/012/000/016/1590/front_en.8.400.jpg',
-  'kurkure': 'https://images.openfoodfacts.org/images/products/890/188/500/0157/front_en.3.400.jpg',
-  'haldirams': 'https://images.openfoodfacts.org/images/products/890/141/000/1218/front_en.3.400.jpg',
-  // Personal Care
-  'dettol': 'https://images.openfoodfacts.org/images/products/501/012/550/3087/front_en.7.400.jpg',
-  'colgate': 'https://images.openfoodfacts.org/images/products/803/486/120/0054/front_en.5.400.jpg',
-  'head-shoulders': 'https://images.openfoodfacts.org/images/products/401/101/922/9090/front_en.6.400.jpg',
-  'dove': 'https://images.openfoodfacts.org/images/products/871/195/300/6716/front_en.3.400.jpg',
-  // Staples - Real rice, oil, dal, flour
-  'india-gate': 'https://images.openfoodfacts.org/images/products/890/172/518/1001/front_en.3.400.jpg',
-  'fortune-oil': 'https://images.openfoodfacts.org/images/products/890/004/200/0014/front_en.3.400.jpg',
-  'tata-dal': 'https://images.openfoodfacts.org/images/products/890/166/700/4017/front_en.3.400.jpg',
-  'aashirvaad': 'https://images.openfoodfacts.org/images/products/890/199/101/0017/front_en.3.400.jpg',
-  'saffola': 'https://images.openfoodfacts.org/images/products/890/238/400/2011/front_en.3.400.jpg',
-  // Spices - Real masala, turmeric, chilli images
-  'mdh': 'https://images.openfoodfacts.org/images/products/890/104/200/0058/front_en.3.400.jpg',
-  'everest': 'https://images.openfoodfacts.org/images/products/890/104/800/2013/front_en.3.400.jpg',
-  'catch': 'https://images.openfoodfacts.org/images/products/890/400/900/0010/front_en.3.400.jpg',
-  'tata-salt': 'https://images.openfoodfacts.org/images/products/890/166/700/4079/front_en.3.400.jpg',
-  // Electronics - Real headphones, powerbank, speaker
+  // Dairy - Amul and Mother Dairy products
+  'amul-milk': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/10840a.jpg',
+  'amul-butter': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/25825a.jpg',
+  'mother-dairy-curd': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/389267a.jpg',
+  'amul-cheese': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/99169a.jpg',
+  // Noodles - Maggi, Yippee, Top Ramen
+  'maggi': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/11610a.jpg',
+  'yippee': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/122952a.jpg',
+  'top-ramen': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/166296a.jpg',
+  // Beverages - Tea, Coffee, Juice, Soft drinks
+  'tata-tea': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/12008a.jpg',
+  'nescafe': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/47597a.jpg',
+  'real-juice': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/15693a.jpg',
+  'coca-cola': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/39430a.jpg',
+  // Snacks - Biscuits, Chips, Namkeen
+  'parle-g': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/12170a.jpg',
+  'britannia': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/99330a.jpg',
+  'lays': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/136097a.jpg',
+  'kurkure': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/2951a.jpg',
+  'haldirams': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/20866a.jpg',
+  'banana-chips': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/133028a.jpg',
+  // Personal Care - Soaps, Toothpaste, Shampoo
+  'dettol': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/53573a.jpg',
+  'colgate': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/14093a.jpg',
+  'head-shoulders': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/14196a.jpg',
+  'dove': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/14140a.jpg',
+  // Staples - Rice, Oil, Dal, Flour
+  'india-gate': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/12229a.jpg',
+  'fortune-oil': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/11965a.jpg',
+  'tata-dal': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/12059a.jpg',
+  'aashirvaad': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/11930a.jpg',
+  'saffola': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/12047a.jpg',
+  // Spices - Masala, Turmeric, Chilli
+  'mdh': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/12103a.jpg',
+  'everest': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/12097a.jpg',
+  'catch': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/12071a.jpg',
+  'tata-salt': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/12080a.jpg',
+  // Electronics
   'boat-headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80',
   'powerbank': 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&q=80',
   'led-bulb': 'https://images.unsplash.com/photo-1532007943853-f7dfa0f960a9?w=400&q=80',
   'speaker': 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&q=80',
-  // Fresh Produce - Real vegetables and fruits
-  'tomatoes': 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&q=80',
-  'onions': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=400&q=80',
-  'potatoes': 'https://images.unsplash.com/photo-1518977676601-b53f82abe2ff?w=400&q=80',
-  'bananas': 'https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400&q=80',
-  'apples': 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&q=80'
+  // Fresh Produce
+  'tomatoes': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/50083a.jpg',
+  'onions': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/50022a.jpg',
+  'potatoes': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/50038a.jpg',
+  'bananas': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/50009a.jpg',
+  'apples': 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=360/app/images/products/sliding_image/50012a.jpg'
 };
 
 // Fallback image generator for products without real images
@@ -132,7 +131,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Amul Gold Milk (1L)', 
     price: 66, 
     category: 'Dairy', 
-    image: getProductImage('amul-milk-gold', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/241600_14-amul-gold-milk.jpg',
     icon: '🥛',
     aisle: 'Aisle 3', 
     tags: ['milk', 'dairy', 'breakfast'],
@@ -145,7 +144,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Amul Butter (500g)', 
     price: 285, 
     category: 'Dairy', 
-    image: getProductImage('amul-butter-500', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/126906_12-amul-butter.jpg',
     icon: '🧈',
     aisle: 'Aisle 3', 
     tags: ['butter', 'dairy', 'spread'],
@@ -158,7 +157,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Mother Dairy Curd (400g)', 
     price: 45, 
     category: 'Dairy', 
-    image: getProductImage('mother-dairy-curd', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/40154714_8-mother-dairy-dahi.jpg',
     icon: '🥣',
     aisle: 'Aisle 3', 
     tags: ['curd', 'yogurt', 'dairy'],
@@ -171,7 +170,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Amul Cheese Slices (10 pcs)', 
     price: 120, 
     category: 'Dairy', 
-    image: getProductImage('amul-cheese-slices', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/40019621_8-amul-cheese-slices.jpg',
     icon: '🧀',
     aisle: 'Aisle 3', 
     tags: ['cheese', 'dairy', 'sandwich'],
@@ -186,7 +185,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Maggi 2-Minute Noodles', 
     price: 14, 
     category: 'Instant Food', 
-    image: getProductImage('maggi-noodles', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/266109_22-maggi-2-minute-instant-noodles-masala.jpg',
     icon: '🍜',
     aisle: 'Aisle 13', 
     tags: ['noodles', 'instant', 'maggi'],
@@ -199,7 +198,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Yippee Noodles Magic Masala', 
     price: 52, 
     category: 'Instant Food', 
-    image: getProductImage('yippee-noodles', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/271375_8-sunfeast-yippee-noodles-magic-masala.jpg',
     icon: '🍜',
     aisle: 'Aisle 13', 
     tags: ['noodles', 'instant', 'yippee'],
@@ -212,7 +211,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Top Ramen Curry Noodles', 
     price: 45, 
     category: 'Instant Food', 
-    image: getProductImage('top-ramen-curry', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/266199_12-top-ramen-noodles-curry.jpg',
     icon: '🍜',
     aisle: 'Aisle 13', 
     tags: ['noodles', 'cup', 'instant'],
@@ -227,7 +226,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Tata Tea Gold (500g)', 
     price: 275, 
     category: 'Beverages', 
-    image: getProductImage('tata-tea-gold', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/266424_21-tata-tea-gold.jpg',
     icon: '🍵',
     aisle: 'Aisle 7', 
     tags: ['tea', 'beverages', 'tata'] 
@@ -237,7 +236,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Nescafe Classic Coffee (100g)', 
     price: 285, 
     category: 'Beverages', 
-    image: getProductImage('nescafe-coffee', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/265944_15-nescafe-classic-100-pure-instant-coffee.jpg',
     icon: '☕',
     aisle: 'Aisle 7', 
     tags: ['coffee', 'nescafe', 'beverages'] 
@@ -247,7 +246,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Real Fruit Power Mixed Fruit (1L)', 
     price: 99, 
     category: 'Beverages', 
-    image: getProductImage('real-juice-mixed', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/265404_10-real-fruit-power-juice-mixed-fruit.jpg',
     icon: '🧃',
     aisle: 'Aisle 8', 
     tags: ['juice', 'fruit', 'real'] 
@@ -257,7 +256,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Coca Cola (750ml)', 
     price: 40, 
     category: 'Beverages', 
-    image: getProductImage('coca-cola-bottle', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/251006_15-coca-cola-soft-drink.jpg',
     icon: '🥤',
     aisle: 'Aisle 8', 
     tags: ['cola', 'soft drink', 'coca cola'] 
@@ -269,7 +268,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Parle-G Gold Biscuits', 
     price: 30, 
     category: 'Biscuits', 
-    image: getProductImage('parle-g-gold', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/266443_18-parle-g-gold-biscuits.jpg',
     icon: '🍪',
     aisle: 'Aisle 5', 
     tags: ['biscuits', 'parle', 'snacks'] 
@@ -279,7 +278,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Britannia Good Day Cashew', 
     price: 55, 
     category: 'Biscuits', 
-    image: getProductImage('britannia-goodday', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/241007_19-britannia-good-day-cookies-cashew.jpg',
     icon: '🍪',
     aisle: 'Aisle 5', 
     tags: ['biscuits', 'britannia', 'cookies'] 
@@ -289,7 +288,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Lays Classic Salted (52g)', 
     price: 20, 
     category: 'Snacks', 
-    image: getProductImage('lays-classic', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/241014_10-lay-s-potato-chips-classic-salted.jpg',
     icon: '🥔',
     aisle: 'Aisle 6', 
     tags: ['chips', 'lays', 'snacks'] 
@@ -299,8 +298,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Kurkure Masala Munch (90g)', 
     price: 25, 
     category: 'Snacks', 
-    image: getProductImage('kurkure-masala', 'icons'),
-    icon: '🍿',
+    image: 'https://www.bigbasket.com/media/uploads/p/l/266040_16-kurkure-namkeen-masala-munch.jpg',
+    icon: '🍟',
     aisle: 'Aisle 6', 
     tags: ['kurkure', 'snacks', 'namkeen'] 
   },
@@ -309,8 +308,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Haldirams Aloo Bhujia (200g)', 
     price: 65, 
     category: 'Snacks', 
-    image: getProductImage('haldirams-bhujia', 'icons'),
-    icon: '🍿',
+    image: 'https://www.bigbasket.com/media/uploads/p/l/265092_12-haldirams-namkeen-aloo-bhujia.jpg',
+    icon: '🍟',
     aisle: 'Aisle 6', 
     tags: ['bhujia', 'haldirams', 'namkeen'] 
   },
@@ -321,7 +320,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Dettol Original Soap (125g)', 
     price: 45, 
     category: 'Personal Care', 
-    image: getProductImage('dettol-soap', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/40015107_8-dettol-bathing-bar-soap-original.jpg',
     icon: '🧼',
     aisle: 'Aisle 9', 
     tags: ['soap', 'dettol', 'hygiene'] 
@@ -331,7 +330,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Colgate MaxFresh Blue (150g)', 
     price: 95, 
     category: 'Personal Care', 
-    image: getProductImage('colgate-maxfresh', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/265553_17-colgate-maxfresh-toothpaste-blue-peppermint-ice.jpg',
     icon: '🦷',
     aisle: 'Aisle 9', 
     tags: ['toothpaste', 'colgate', 'dental'] 
@@ -341,7 +340,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Head & Shoulders Shampoo (180ml)', 
     price: 199, 
     category: 'Personal Care', 
-    image: getProductImage('head-shoulders', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/40068684_14-head-shoulders-anti-dandruff-shampoo-smooth-silky.jpg',
     icon: '🧴',
     aisle: 'Aisle 10', 
     tags: ['shampoo', 'haircare', 'dandruff'] 
@@ -351,7 +350,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Dove Soap (100g x 3)', 
     price: 175, 
     category: 'Personal Care', 
-    image: getProductImage('dove-soap-pack', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/40015116_17-dove-cream-beauty-bathing-bar.jpg',
     icon: '🧼',
     aisle: 'Aisle 9', 
     tags: ['soap', 'dove', 'moisturizing'] 
@@ -363,7 +362,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'India Gate Basmati Rice (5kg)', 
     price: 450, 
     category: 'Staples', 
-    image: getProductImage('indiagate-rice', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/40019974_8-india-gate-basmati-rice-super.jpg',
     icon: '🍚',
     aisle: 'Aisle 15', 
     tags: ['rice', 'basmati', 'staples'] 
@@ -373,7 +372,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Fortune Sunflower Oil (1L)', 
     price: 155, 
     category: 'Staples', 
-    image: getProductImage('fortune-oil', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/10002975_14-fortune-sunlite-refined-sunflower-oil.jpg',
     icon: '🫒',
     aisle: 'Aisle 15', 
     tags: ['oil', 'cooking', 'sunflower'] 
@@ -383,7 +382,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Tata Toor Dal (1kg)', 
     price: 165, 
     category: 'Staples', 
-    image: getProductImage('tata-toor-dal', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/10000459_15-tata-sampann-unpolished-toor-dalarhar-dal.jpg',
     icon: '🫘',
     aisle: 'Aisle 16', 
     tags: ['dal', 'lentils', 'pulses'] 
@@ -393,7 +392,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Aashirvaad Atta (5kg)', 
     price: 285, 
     category: 'Staples', 
-    image: getProductImage('aashirvaad-atta', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/10000203_20-aashirvaad-atta-whole-wheat.jpg',
     icon: '🌾',
     aisle: 'Aisle 16', 
     tags: ['atta', 'flour', 'wheat'] 
@@ -403,7 +402,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Saffola Gold Oil (1L)', 
     price: 199, 
     category: 'Staples', 
-    image: getProductImage('saffola-gold', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/147489_16-saffola-gold-pro-healthy-lifestyle-ricebran-based-blended-oil.jpg',
     icon: '🫒',
     aisle: 'Aisle 15', 
     tags: ['oil', 'cooking', 'healthy'] 
@@ -415,7 +414,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'MDH Garam Masala (100g)', 
     price: 85, 
     category: 'Spices', 
-    image: getProductImage('mdh-garam-masala', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/10000070_17-mdh-masala-garam.jpg',
     icon: '🌶️',
     aisle: 'Aisle 17', 
     tags: ['masala', 'spices', 'mdh'] 
@@ -425,7 +424,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Everest Turmeric Powder (100g)', 
     price: 55, 
     category: 'Spices', 
-    image: getProductImage('everest-turmeric', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/10000255_19-everest-powder-turmeric.jpg',
     icon: '🟡',
     aisle: 'Aisle 17', 
     tags: ['turmeric', 'haldi', 'spices'] 
@@ -435,7 +434,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Catch Red Chilli Powder (100g)', 
     price: 65, 
     category: 'Spices', 
-    image: getProductImage('catch-chilli', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/40000148_17-catch-red-chilli-powder.jpg',
     icon: '🌶️',
     aisle: 'Aisle 18', 
     tags: ['chilli', 'mirch', 'spices'] 
@@ -445,7 +444,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Tata Salt (1kg)', 
     price: 28, 
     category: 'Spices', 
-    image: getProductImage('tata-salt', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/251788_14-tata-salt-iodized.jpg',
     icon: '🧂',
     aisle: 'Aisle 17', 
     tags: ['salt', 'tata', 'iodized'] 
@@ -457,7 +456,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'boAt Rockerz 450 Headphones', 
     price: 1499, 
     category: 'Electronics', 
-    image: getProductImage('boat-rockerz-450', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/40248078_1-boat-rockerz-510-bluetooth-headphone-with-thumping-bass-up-to-10h-playtime-dual-connectivity-modes-black.jpg',
     icon: '🎧',
     aisle: 'Aisle 19', 
     tags: ['headphones', 'boat', 'audio'], 
@@ -468,7 +467,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Mi Power Bank 10000mAh', 
     price: 1199, 
     category: 'Electronics', 
-    image: getProductImage('mi-powerbank', 'icons'),
+    image: 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&q=80',
     icon: '🔋',
     aisle: 'Aisle 19', 
     tags: ['powerbank', 'xiaomi', 'charging'], 
@@ -479,7 +478,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Syska LED Bulb 9W (2 Pack)', 
     price: 199, 
     category: 'Electronics', 
-    image: getProductImage('syska-led-bulb', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/40151361_3-syska-led-bulb-base-b22-9w-cool-day-light.jpg',
     icon: '💡',
     aisle: 'Aisle 20', 
     tags: ['led', 'bulb', 'lighting'], 
@@ -490,7 +489,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Portronics Bluetooth Speaker', 
     price: 899, 
     category: 'Electronics', 
-    image: getProductImage('portronics-speaker', 'icons'),
+    image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&q=80',
     icon: '🔊',
     aisle: 'Aisle 19', 
     tags: ['speaker', 'bluetooth', 'audio'], 
@@ -503,7 +502,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Fresh Tomatoes (500g)', 
     price: 30, 
     category: 'Fresh Produce', 
-    image: getProductImage('fresh-tomatoes', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/10000204_15-fresho-tomato-hybrid.jpg',
     icon: '🍅',
     aisle: 'Aisle 1', 
     tags: ['vegetables', 'tomato', 'fresh'] 
@@ -513,7 +512,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Onion (1kg)', 
     price: 35, 
     category: 'Fresh Produce', 
-    image: getProductImage('fresh-onions', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/10000148_16-fresho-onion.jpg',
     icon: '🧅',
     aisle: 'Aisle 1', 
     tags: ['vegetables', 'onion', 'fresh'] 
@@ -523,7 +522,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Fresh Potatoes (1kg)', 
     price: 40, 
     category: 'Fresh Produce', 
-    image: getProductImage('fresh-potatoes', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/10000159_15-fresho-potato.jpg',
     icon: '🥔',
     aisle: 'Aisle 1', 
     tags: ['vegetables', 'potato', 'fresh'] 
@@ -533,7 +532,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Fresh Bananas (6 pcs)', 
     price: 45, 
     category: 'Fresh Produce', 
-    image: getProductImage('fresh-bananas', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/10000026_13-fresho-banana-robusta.jpg',
     icon: '🍌',
     aisle: 'Aisle 2', 
     tags: ['fruits', 'banana', 'fresh'] 
@@ -543,7 +542,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Shimla Apples (500g)', 
     price: 120, 
     category: 'Fresh Produce', 
-    image: getProductImage('shimla-apples', 'icons'),
+    image: 'https://www.bigbasket.com/media/uploads/p/l/10000023_16-fresho-apple-shimla.jpg',
     icon: '🍎',
     aisle: 'Aisle 2', 
     tags: ['fruits', 'apple', 'fresh'] 
@@ -699,7 +698,7 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Banana Chips Sweetened (150g)', 
     price: 85, 
     category: 'Snacks', 
-    image: 'https://images.openfoodfacts.org/images/products/000/000/000/4530/front_en.3.400.jpg',
+    image: 'https://www.bigbasket.com/media/uploads/p/l/40017654_5-bb-royal-banana-chips.jpg',
     icon: '🍌',
     aisle: 'Aisle 6', 
     tags: ['banana', 'chips', 'snacks', 'sweet'],
