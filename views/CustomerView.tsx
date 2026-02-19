@@ -13,7 +13,7 @@ import {
   History, MapPin, Store, Globe, Signal, Clock,
   ChevronRight, Package, Receipt, Star, TrendingUp, Home,
   Download, FileText, Share2, ChevronDown, Search, Filter,
-  ShieldCheck, PartyPopper, Copy
+  ShieldCheck, PartyPopper, Copy, User, Heart, QrCode
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { CameraScanner } from '../components/CameraScanner';
@@ -46,7 +46,7 @@ interface CustomerViewProps {
   onExit?: () => void;
 }
 
-type ViewState = 'MODE_SELECT' | 'BRANCH_SELECT' | 'SHOPPING' | 'CHECKOUT' | 'PAYMENT' | 'EXIT_QR' | 'HISTORY' | 'ONLINE_BROWSE' | 'CITY_SELECT' | 'PREORDER_MALL_SELECT' | 'PREORDER_PAYMENT' | 'PREORDER_QR' | 'VIEW_PREORDER_QR';
+type ViewState = 'MODE_SELECT' | 'BRANCH_SELECT' | 'SHOPPING' | 'CHECKOUT' | 'PAYMENT' | 'EXIT_QR' | 'HISTORY' | 'ONLINE_BROWSE' | 'CITY_SELECT' | 'PREORDER_MALL_SELECT' | 'PREORDER_PAYMENT' | 'PREORDER_QR' | 'VIEW_PREORDER_QR' | 'USER_PROFILE';
 type PaymentMethod = 'GOOGLE_PAY' | 'UPI' | 'CARD' | 'CASH';
 type AppMode = 'ONLINE' | 'OFFLINE';
 
@@ -416,6 +416,10 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [preorderCart, setPreorderCart] = useState<CartItem[]>([]);
   const [showPreorderModal, setShowPreorderModal] = useState(false);
+  
+  // Variant/Flavor selection state
+  const [selectedVariant, setSelectedVariant] = useState<string>('');
+  const [selectedFlavor, setSelectedFlavor] = useState<string>('');
   
   // Saved preorder QR view state
   const [viewingPreorder, setViewingPreorder] = useState<Transaction | null>(null);
@@ -1084,24 +1088,28 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </div>
           </div>
 
-          {/* User Badge - Enhanced Glass */}
-          <div className="mt-8 glass-card bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-5 flex items-center gap-4 hover:scale-[1.02] transition-transform">
+          {/* User Badge - Enhanced Glass - Clickable for Profile */}
+          <button 
+            onClick={() => setViewState('USER_PROFILE')}
+            className="w-full mt-8 glass-card bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-5 flex items-center gap-4 hover:scale-[1.02] transition-transform active:scale-[0.98]"
+          >
             <div className="relative">
               <div className="absolute inset-0 bg-amber-500 rounded-full blur-md opacity-50" />
               <div className="relative w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
                 <Star className="w-7 h-7 text-white" />
               </div>
             </div>
-            <div>
+            <div className="text-left">
               <p className="text-white font-bold text-lg">{t.tiers[userTier?.toLowerCase() as keyof typeof t.tiers] || userTier} {t.customer.member}</p>
               <p className="text-amber-400/80 text-sm font-mono">ID: {userId.slice(0, 8)}...</p>
             </div>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
               <span className="bg-amber-500/20 text-amber-400 px-3 py-1.5 rounded-full text-xs font-bold">
                 ⭐ VIP
               </span>
+              <ChevronRight className="w-5 h-5 text-amber-400" />
             </div>
-          </div>
+          </button>
 
           {/* Settings Section - Language & Exit - Improved Spacing */}
           <div className="mt-8 pt-6 border-t border-white/10">
@@ -1123,6 +1131,261 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                 </button>
               )}
             </div>
+          </div>
+        </div>
+        
+        <AIChatbot mode="CUSTOMER" isOnline={true} cartItems={[]} cartTotal={0} />
+      </div>
+    );
+  }
+
+  // ============================================
+  // USER PROFILE VIEW
+  // ============================================
+  if (viewState === 'USER_PROFILE') {
+    const totalSpent = transactionHistory.reduce((sum, tx) => sum + tx.total, 0);
+    const totalItems = transactionHistory.reduce((sum, tx) => sum + tx.items.reduce((s, i) => s + i.quantity, 0), 0);
+    const avgOrderValue = transactionHistory.length > 0 ? totalSpent / transactionHistory.length : 0;
+    const memberSince = transactionHistory.length > 0 
+      ? new Date(Math.min(...transactionHistory.map(t => t.timestamp))).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+      : 'Just Joined';
+    
+    // Calculate most purchased categories
+    const categoryCount: Record<string, number> = {};
+    transactionHistory.forEach(tx => {
+      tx.items.forEach(item => {
+        categoryCount[item.category] = (categoryCount[item.category] || 0) + item.quantity;
+      });
+    });
+    const topCategories = Object.entries(categoryCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 safe-area-inset">
+        {/* Header */}
+        <div className="bg-gradient-to-b from-amber-500/20 to-transparent pb-8">
+          <div className="max-w-lg mx-auto px-4 pt-4">
+            <button 
+              onClick={() => setViewState('MODE_SELECT')} 
+              className="text-white/70 text-sm mb-6 flex items-center gap-2 active:text-white"
+            >
+              <ArrowRight className="w-4 h-4 rotate-180" /> {t.actions.back}
+            </button>
+            
+            {/* Profile Avatar & Name */}
+            <div className="text-center">
+              <div className="relative inline-block">
+                <div className="absolute inset-0 bg-amber-500 rounded-full blur-xl opacity-50 animate-pulse" />
+                <div className="relative w-24 h-24 bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-2xl mx-auto">
+                  <User className="w-12 h-12 text-white" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center border-4 border-slate-900">
+                  <CheckCircle className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <h1 className="text-2xl font-black text-white mt-4">
+                {t.tiers[userTier?.toLowerCase() as keyof typeof t.tiers] || userTier} {t.customer.member}
+              </h1>
+              <p className="text-amber-400/80 font-mono text-sm mt-1">ID: {userId}</p>
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <span className="bg-amber-500/20 text-amber-400 px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-1">
+                  <Star className="w-4 h-4" /> VIP Status
+                </span>
+                <span className="bg-white/10 text-white/70 px-4 py-1.5 rounded-full text-sm">
+                  Since {memberSince}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto px-4 -mt-4 pb-8">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                  <IndianRupee className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-black text-white">{CURRENCY_SYMBOL}{totalSpent.toFixed(0)}</p>
+                  <p className="text-xs text-slate-400">Total Spent</p>
+                </div>
+              </div>
+            </div>
+            <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                  <ShoppingBag className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-black text-white">{transactionHistory.length}</p>
+                  <p className="text-xs text-slate-400">Orders</p>
+                </div>
+              </div>
+            </div>
+            <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                  <Package className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-black text-white">{totalItems}</p>
+                  <p className="text-xs text-slate-400">Items Bought</p>
+                </div>
+              </div>
+            </div>
+            <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-black text-white">{CURRENCY_SYMBOL}{avgOrderValue.toFixed(0)}</p>
+                  <p className="text-xs text-slate-400">Avg Order</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Favorite Categories */}
+          {topCategories.length > 0 && (
+            <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-2xl mb-6">
+              <h3 className="text-white font-bold mb-3 flex items-center gap-2">
+                <Heart className="w-4 h-4 text-rose-400" /> Your Favorites
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {topCategories.map(([category, count]) => (
+                  <span key={category} className="bg-white/10 text-white px-3 py-1.5 rounded-full text-sm flex items-center gap-2">
+                    {category}
+                    <span className="bg-amber-500/30 text-amber-300 px-2 py-0.5 rounded-full text-xs">{count}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Orders Preview */}
+          <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl mb-6 overflow-hidden">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-amber-400" /> Recent Orders
+              </h3>
+              <button 
+                onClick={() => setViewState('HISTORY')}
+                className="text-amber-400 text-sm font-bold flex items-center gap-1"
+              >
+                View All <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            {transactionHistory.length === 0 ? (
+              <div className="p-8 text-center">
+                <ShoppingCart className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400">No orders yet</p>
+                <p className="text-slate-500 text-sm">Start shopping to see your history</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {transactionHistory.slice(0, 3).map(tx => (
+                  <div key={tx.id} className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center overflow-hidden">
+                        {tx.items[0]?.image ? (
+                          <img 
+                            src={tx.items[0].image} 
+                            alt={tx.items[0].name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.parentElement!.innerHTML = `<span class="text-2xl">${tx.items[0]?.icon || '📦'}</span>`;
+                            }}
+                          />
+                        ) : (
+                          <span className="text-2xl">{tx.items[0]?.icon || '📦'}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium text-sm truncate">
+                          {tx.items.slice(0, 2).map(i => i.name).join(', ')}
+                          {tx.items.length > 2 && ` +${tx.items.length - 2} more`}
+                        </p>
+                        <p className="text-slate-400 text-xs">
+                          {new Date(tx.timestamp).toLocaleDateString('en-IN', { 
+                            day: 'numeric', month: 'short', year: 'numeric' 
+                          })}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-emerald-400 font-bold">{CURRENCY_SYMBOL}{tx.total.toFixed(0)}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          tx.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
+                          tx.status === 'PREORDER_PENDING' ? 'bg-amber-500/20 text-amber-400' :
+                          'bg-blue-500/20 text-blue-400'
+                        }`}>
+                          {tx.status === 'COMPLETED' ? '✓ Done' : 
+                           tx.status === 'PREORDER_PENDING' ? '⏳ Pending' : 
+                           tx.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="space-y-3">
+            <button 
+              onClick={() => setViewState('HISTORY')}
+              className="w-full glass-card bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-xl flex items-center gap-3 active:bg-white/10 transition-all"
+            >
+              <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                <Receipt className="w-5 h-5 text-amber-400" />
+              </div>
+              <span className="text-white font-medium">Order History</span>
+              <ChevronRight className="w-5 h-5 text-slate-500 ml-auto" />
+            </button>
+            
+            <button 
+              onClick={() => setViewState('VIEW_PREORDER_QR')}
+              className="w-full glass-card bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-xl flex items-center gap-3 active:bg-white/10 transition-all"
+            >
+              <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                <QrCode className="w-5 h-5 text-purple-400" />
+              </div>
+              <span className="text-white font-medium">Active Preorders</span>
+              <ChevronRight className="w-5 h-5 text-slate-500 ml-auto" />
+            </button>
+            
+            <div className="glass-card bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-blue-400" />
+                </div>
+                <span className="text-white font-medium">Language</span>
+              </div>
+              <LanguageSelector variant="dark" showLabel={false} />
+            </div>
+          </div>
+
+          {/* Loyalty Progress */}
+          <div className="mt-6 glass-card bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 p-4 rounded-2xl">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-white font-bold">🏆 Loyalty Progress</span>
+              <span className="text-amber-400 text-sm font-bold">{userTier}</span>
+            </div>
+            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all"
+                style={{ width: userTier === 'GOLD' ? '100%' : userTier === 'SILVER' ? '66%' : userTier === 'BRONZE' ? '33%' : '20%' }}
+              />
+            </div>
+            <p className="text-slate-400 text-xs mt-2">
+              {userTier === 'GOLD' ? 'You\'ve reached the highest tier!' : 
+               `Spend ${CURRENCY_SYMBOL}${userTier === 'SILVER' ? '5,000' : userTier === 'BRONZE' ? '2,500' : '1,000'} more to reach ${userTier === 'SILVER' ? 'Gold' : userTier === 'BRONZE' ? 'Silver' : 'Bronze'}`}
+            </p>
           </div>
         </div>
         
@@ -1192,17 +1455,53 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   // ============================================
   // ONLINE BROWSE VIEW with Preordering
   // ============================================
-  const addToPreorder = (product: Product) => {
-    setPreorderCart(prev => {
-      const existing = prev.find(p => p.id === product.id);
-      if (existing) {
-        return prev.map(p => p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p);
+  const addToPreorder = (product: Product, variant?: string, flavor?: string) => {
+    // Determine the actual variant and flavor to use
+    const actualVariant = variant || (product.variants && product.variants.length > 0 ? product.variants[0].id : undefined);
+    const actualFlavor = flavor || (product.flavors && product.flavors.length > 0 ? product.flavors[0] : undefined);
+    
+    // Calculate price based on variant
+    let finalPrice = product.price;
+    if (product.variants && actualVariant) {
+      const selectedVar = product.variants.find(v => v.id === actualVariant);
+      if (selectedVar) {
+        finalPrice = selectedVar.price;
       }
-      return [...prev, { ...product, quantity: 1, addedAt: Date.now() }];
+    }
+    
+    // Create a unique ID for cart item based on product + variant + flavor
+    const cartItemId = `${product.id}${actualVariant ? `-${actualVariant}` : ''}${actualFlavor ? `-${actualFlavor}` : ''}`;
+    
+    setPreorderCart(prev => {
+      const existing = prev.find(p => 
+        p.id === product.id && 
+        p.selectedVariant === actualVariant && 
+        p.selectedFlavor === actualFlavor
+      );
+      if (existing) {
+        return prev.map(p => 
+          (p.id === product.id && p.selectedVariant === actualVariant && p.selectedFlavor === actualFlavor)
+            ? { ...p, quantity: p.quantity + 1 } 
+            : p
+        );
+      }
+      return [...prev, { 
+        ...product, 
+        quantity: 1, 
+        addedAt: Date.now(),
+        selectedVariant: actualVariant,
+        selectedFlavor: actualFlavor,
+        variantPrice: finalPrice,
+        price: finalPrice  // Override base price with variant price
+      }];
     });
+    
+    // Reset selections after adding
+    setSelectedVariant('');
+    setSelectedFlavor('');
   };
   
-  const preorderTotal = preorderCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const preorderTotal = preorderCart.reduce((sum, item) => sum + (item.variantPrice || item.price) * item.quantity, 0);
 
   if (viewState === 'ONLINE_BROWSE') {
     // Featured deals for online mode - Enhanced with more offers
@@ -1510,16 +1809,20 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
           
           <div className="grid grid-cols-2 gap-3">
             {filteredProducts.map((product, index) => {
-              // Calculate discount based on product - consistent per product
-              const hasDiscount = product.id.charCodeAt(0) % 3 === 0;
-              const discountPercent = hasDiscount ? (10 + (product.id.charCodeAt(1) % 30)) : 0;
-              const originalPrice = hasDiscount ? Math.round(product.price * (100 / (100 - discountPercent))) : product.price;
+              // Use actual mrp and discount from product if available, otherwise calculate
+              const hasDiscount = product.mrp && product.discount ? true : (product.id.charCodeAt(0) % 3 === 0);
+              const discountPercent = product.discount || (hasDiscount ? (10 + (product.id.charCodeAt(1) % 30)) : 0);
+              const originalPrice = product.mrp || (hasDiscount ? Math.round(product.price * (100 / (100 - discountPercent))) : product.price);
               
               return (
                 <div 
                   key={product.id} 
                   className="product-card bg-white rounded-2xl p-3 shadow-sm border border-slate-100 cursor-pointer active:scale-95 transition-all duration-300 hover:shadow-lg"
-                  onClick={() => setSelectedProduct(product)}
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setSelectedVariant('');
+                    setSelectedFlavor('');
+                  }}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {/* Product Image with real image or fallback to icon */}
@@ -1559,14 +1862,33 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                     <div className="absolute bottom-2 left-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
                       In Stock
                     </div>
+                    
+                    {/* Variants/Flavors badge */}
+                    {(product.variants && product.variants.length > 0) && (
+                      <div className="absolute bottom-2 right-2 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
+                        {product.variants.length} sizes
+                      </div>
+                    )}
+                    {(product.flavors && product.flavors.length > 0) && (
+                      <div className="absolute bottom-2 right-2 bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
+                        {product.flavors.length} flavors
+                      </div>
+                    )}
                   </div>
                   
                   <h3 className="font-bold text-slate-800 text-sm leading-tight line-clamp-2">{product.name}</h3>
                   
                   {/* Price with original price if discounted */}
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-emerald-600 font-black text-lg">{CURRENCY_SYMBOL}{product.price}</p>
-                    {hasDiscount && (
+                    {product.variants && product.variants.length > 0 ? (
+                      <p className="text-emerald-600 font-black text-lg">
+                        <span className="text-xs font-normal text-slate-500">From </span>
+                        {CURRENCY_SYMBOL}{Math.min(...product.variants.map(v => v.price))}
+                      </p>
+                    ) : (
+                      <p className="text-emerald-600 font-black text-lg">{CURRENCY_SYMBOL}{product.price}</p>
+                    )}
+                    {hasDiscount && !product.variants && (
                       <p className="text-slate-400 text-xs line-through">{CURRENCY_SYMBOL}{originalPrice}</p>
                     )}
                   </div>
@@ -1755,8 +2077,33 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   )}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-xl font-black text-slate-800">{selectedProduct.name}</h2>
-                  <p className="text-emerald-600 font-black text-2xl mt-1">{CURRENCY_SYMBOL}{selectedProduct.price}</p>
+                  <h2 className="text-xl font-black text-slate-800">
+                    {selectedProduct.name}
+                    {selectedFlavor && ` - ${selectedFlavor}`}
+                  </h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-emerald-600 font-black text-2xl">
+                      {CURRENCY_SYMBOL}
+                      {selectedProduct.variants && selectedVariant 
+                        ? selectedProduct.variants.find(v => v.id === selectedVariant)?.price || selectedProduct.price
+                        : selectedProduct.variants && selectedProduct.variants.length > 0 
+                          ? selectedProduct.variants[0].price 
+                          : selectedProduct.price}
+                    </p>
+                    {selectedProduct.mrp && selectedProduct.mrp > selectedProduct.price && (
+                      <p className="text-slate-400 text-lg line-through">{CURRENCY_SYMBOL}{selectedProduct.mrp}</p>
+                    )}
+                    {selectedProduct.discount && (
+                      <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">
+                        {selectedProduct.discount}% OFF
+                      </span>
+                    )}
+                  </div>
+                  {selectedProduct.mrp && selectedProduct.mrp > selectedProduct.price && (
+                    <p className="text-emerald-600 text-xs font-medium mt-1">
+                      You save {CURRENCY_SYMBOL}{selectedProduct.mrp - selectedProduct.price} on MRP
+                    </p>
+                  )}
                   {selectedProduct.rating && (
                     <div className="flex items-center gap-2 mt-2">
                       <div className="flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-xs font-bold">
@@ -1780,9 +2127,53 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               </div>
               
               {selectedProduct.description && (
-                <div className="bg-slate-50 rounded-xl p-4 mb-6">
+                <div className="bg-slate-50 rounded-xl p-4 mb-4">
                   <h3 className="font-bold text-slate-700 text-sm mb-2">Product Description</h3>
                   <p className="text-slate-600 text-sm leading-relaxed">{selectedProduct.description}</p>
+                </div>
+              )}
+              
+              {/* Variant Selection (Size) */}
+              {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="font-bold text-slate-700 text-sm mb-2">Select Size</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProduct.variants.map((variant) => (
+                      <button
+                        key={variant.id}
+                        onClick={() => setSelectedVariant(variant.id)}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                          selectedVariant === variant.id || (!selectedVariant && variant.id === selectedProduct.variants![0].id)
+                            ? 'bg-amber-500 text-white shadow-md'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {variant.name} - {CURRENCY_SYMBOL}{variant.price}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Flavor Selection */}
+              {selectedProduct.flavors && selectedProduct.flavors.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="font-bold text-slate-700 text-sm mb-2">Select Flavor</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProduct.flavors.map((flavor) => (
+                      <button
+                        key={flavor}
+                        onClick={() => setSelectedFlavor(flavor)}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                          selectedFlavor === flavor || (!selectedFlavor && flavor === selectedProduct.flavors![0])
+                            ? 'bg-purple-500 text-white shadow-md'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {flavor}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               
@@ -1839,7 +2230,11 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                 }
                 return (
                   <button
-                    onClick={() => { addToPreorder(selectedProduct); }}
+                    onClick={() => { 
+                      const variantToUse = selectedVariant || (selectedProduct.variants && selectedProduct.variants.length > 0 ? selectedProduct.variants[0].id : undefined);
+                      const flavorToUse = selectedFlavor || (selectedProduct.flavors && selectedProduct.flavors.length > 0 ? selectedProduct.flavors[0] : undefined);
+                      addToPreorder(selectedProduct, variantToUse, flavorToUse); 
+                    }}
                     className="w-full bg-amber-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-amber-600 transition-colors"
                   >
                     Add to Preorder Cart
@@ -1869,8 +2264,8 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               ) : (
                 <>
                   <div className="space-y-3 mb-6 max-h-48 overflow-y-auto">
-                    {preorderCart.map(item => (
-                      <div key={item.id} className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+                    {preorderCart.map((item, index) => (
+                      <div key={`${item.id}-${item.selectedVariant}-${item.selectedFlavor}-${index}`} className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
                         <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0">
                           {item.image ? (
                             <img 
@@ -1888,7 +2283,14 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                         </div>
                         <div className="flex-1">
                           <p className="font-bold text-slate-800 text-sm">{item.name}</p>
-                          <p className="text-amber-600 font-bold">{CURRENCY_SYMBOL}{item.price} × {item.quantity}</p>
+                          {/* Show variant and flavor info */}
+                          {(item.selectedVariant || item.selectedFlavor) && (
+                            <p className="text-xs text-slate-500">
+                              {item.selectedVariant && <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded mr-1">{item.variants?.find(v => v.id === item.selectedVariant)?.name || item.selectedVariant}</span>}
+                              {item.selectedFlavor && <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">{item.selectedFlavor}</span>}
+                            </p>
+                          )}
+                          <p className="text-amber-600 font-bold">{CURRENCY_SYMBOL}{item.variantPrice || item.price} × {item.quantity}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -2192,11 +2594,29 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               <ShoppingBag className="w-5 h-5 text-amber-500" />
               Order Summary
             </h2>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
+            <div className="space-y-2 max-h-48 overflow-y-auto">
               {preorderCart.map(item => (
-                <div key={item.id} className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">{item.icon} {item.name} × {item.quantity}</span>
-                  <span className="font-bold">{CURRENCY_SYMBOL}{(item.price * item.quantity).toFixed(2)}</span>
+                <div key={item.id} className="flex items-center gap-3 bg-slate-50 p-2 rounded-lg">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-lg border overflow-hidden flex-shrink-0">
+                    {item.image ? (
+                      <img 
+                        src={item.image} 
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerHTML = `<span class="text-lg">${item.icon || '📦'}</span>`;
+                        }}
+                      />
+                    ) : (
+                      <span className="text-lg">{item.icon || '📦'}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-700 text-sm truncate">{item.name}</p>
+                    <p className="text-slate-400 text-xs">×{item.quantity}</p>
+                  </div>
+                  <p className="font-bold text-slate-800 text-sm">{CURRENCY_SYMBOL}{(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
             </div>

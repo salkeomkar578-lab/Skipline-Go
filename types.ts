@@ -5,11 +5,20 @@
 
 // ==================== PRODUCT TYPES ====================
 
+export interface ProductVariant {
+  id: string;           // Variant ID (e.g., 'small', 'medium', 'large')
+  name: string;         // Display name (e.g., 'Small', 'Medium 2-Pack')
+  price: number;        // Price for this variant
+  weight?: number;      // Weight in grams (if applicable)
+}
+
 export interface Product {
   id: string;           // Barcode as ID
   barcode?: string;     // Explicit barcode field (id is also barcode)
   name: string;
-  price: number;
+  price: number;        // Base price (or default variant price)
+  mrp?: number;         // Maximum Retail Price (original price)
+  discount?: number;    // Discount percentage
   category: string;
   image: string;
   icon?: string;        // Emoji icon for product
@@ -19,12 +28,20 @@ export interface Product {
   description?: string; // Product description for online browsing
   rating?: number;      // Product rating (1-5)
   reviews?: number;     // Number of reviews
+  // Variant support
+  variants?: ProductVariant[];  // Size/flavor variants
+  flavors?: string[];           // Available flavors (e.g., ['Chocolate', 'Elaichi'])
+  selectedVariant?: string;     // Currently selected variant ID
+  selectedFlavor?: string;      // Currently selected flavor
 }
 
 export interface CartItem extends Product {
   quantity: number;
   addedAt: number;
   scannedLocation?: string;  // Aisle where item was scanned
+  selectedVariant?: string;   // Selected size variant ID
+  selectedFlavor?: string;    // Selected flavor
+  variantPrice?: number;      // Price based on selected variant
 }
 
 // ==================== USER & AUTH TYPES ====================
