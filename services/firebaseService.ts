@@ -39,6 +39,33 @@ import {
 } from '../types';
 import { MOCK_PRODUCTS } from '../constants';
 
+// Force local storage for admin operations (Firebase rules may not allow writes)
+const USE_LOCAL_ADMIN = true;
+
+// Custom event for product updates (used for cross-component sync)
+const PRODUCT_UPDATE_EVENT = 'skipline_products_updated';
+
+/**
+ * Notify all listeners that products have been updated
+ * This triggers re-fetch in CustomerView and other components
+ */
+export const notifyProductsUpdated = () => {
+  window.dispatchEvent(new CustomEvent(PRODUCT_UPDATE_EVENT, {
+    detail: { timestamp: Date.now() }
+  }));
+  console.log('📢 Products updated notification sent');
+};
+
+/**
+ * Subscribe to product update events
+ * Returns unsubscribe function
+ */
+export const subscribeToProductUpdates = (callback: () => void): (() => void) => {
+  const handler = () => callback();
+  window.addEventListener(PRODUCT_UPDATE_EVENT, handler);
+  return () => window.removeEventListener(PRODUCT_UPDATE_EVENT, handler);
+};
+
 // ==================== COLLECTIONS ====================
 const COLLECTIONS = {
   PRODUCTS: 'products',
@@ -155,12 +182,33 @@ export const saveTransactionToFirebase = async (transaction: Transaction): Promi
 
 /**
  * Get all products for offline caching
+ * ALWAYS checks localStorage first for admin products (they are stored locally)
  */
 export const getAllProducts = async (): Promise<Product[]> => {
+  // ALWAYS check localStorage first for admin-added products
+  // Admin products are stored locally regardless of Firebase mode
+  let adminProducts: Product[] = [];
+  try {
+    adminProducts = JSON.parse(localStorage.getItem('skipline_admin_products') || '[]');
+    console.log('📦 Admin products from localStorage:', adminProducts.length);
+  } catch (e) {
+    console.error('Error loading admin products from localStorage:', e);
+    adminProducts = [];
+  }
+
+  // If admin products exist, merge with mock products
+  if (adminProducts.length > 0) {
+    const adminIds = new Set(adminProducts.map((p: Product) => p.id));
+    const filteredMock = MOCK_PRODUCTS.filter(p => !adminIds.has(p.id));
+    return [...adminProducts, ...filteredMock];
+  }
+
+  // If no admin products and we're in demo mode, return mock products
   if (isDemoMode || !db) {
     return MOCK_PRODUCTS;
   }
   
+  // Try to fetch from Firestore (only if Firebase is configured and no admin products)
   try {
     const querySnapshot = await getDocs(collection(db, COLLECTIONS.PRODUCTS));
     const products = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
@@ -169,6 +217,132 @@ export const getAllProducts = async (): Promise<Product[]> => {
     console.error('Error fetching products:', error);
     return MOCK_PRODUCTS;
   }
+}; 
+
+// ==================== ADMIN PRODUCT OPERATIONS ====================
+
+/**
+ * Save a product to Firebase (create or update)
+ * Used by Admin Panel for product management
+ * Always uses localStorage for reliability (Firebase rules may block writes)
+ */
+export const saveProductToFirebase = async (product: Product): Promise<void> => {
+  // Clean product data - remove undefined values
+  const cleanProduct: any = {};
+  Object.keys(product).forEach(key => {
+    const value = (product as any)[key];
+    if (value !== undefined && value !== null && value !== '') {
+      cleanProduct[key] = value;
+    }
+  });
+  
+  // Ensure required fields
+  if (!cleanProduct.id) {
+    cleanProduct.id = `PROD${Date.now()}`;
+  }
+  if (!cleanProduct.name) {
+    throw new Error('Product name is required');
+  }
+  if (cleanProduct.price === undefined) {
+    cleanProduct.price = 0;
+  }
+  if (!cleanProduct.category) {
+    cleanProduct.category = 'General';
+  }
+  if (!cleanProduct.image) {
+    cleanProduct.image = `https://api.dicebear.com/7.x/icons/svg?seed=${encodeURIComponent(cleanProduct.name)}`;
+  }
+  
+  // Always use localStorage for admin products (Firebase rules may not allow writes)
+  console.log('📦 Saving product locally:', cleanProduct.id);
+  try {
+    const products = JSON.parse(localStorage.getItem('skipline_admin_products') || '[]');
+    const existingIndex = products.findIndex((p: Product) => p.id === cleanProduct.id);
+    if (existingIndex >= 0) {
+      products[existingIndex] = { ...cleanProduct, updatedAt: Date.now() };
+    } else {
+      products.push({ ...cleanProduct, createdAt: Date.now() });
+    }
+    localStorage.setItem('skipline_admin_products', JSON.stringify(products));
+    console.log('✅ Product saved successfully:', cleanProduct.id);
+    // Notify other components that products have changed
+    notifyProductsUpdated();
+    return;
+  } catch (localError) {
+    console.error('Error saving to localStorage:', localError);
+    throw new Error('Failed to save product');
+  }
+};
+
+/**
+ * Delete a product from Firebase
+ * Used by Admin Panel for product management
+ */
+export const deleteProductFromFirebase = async (productId: string): Promise<void> => {
+  console.log('🗑️ Deleting product:', productId);
+  try {
+    const products = JSON.parse(localStorage.getItem('skipline_admin_products') || '[]');
+    const filtered = products.filter((p: Product) => p.id !== productId);
+    localStorage.setItem('skipline_admin_products', JSON.stringify(filtered));
+    console.log('✅ Product deleted successfully:', productId);
+    // Notify other components that products have changed
+    notifyProductsUpdated();
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    throw new Error('Failed to delete product');
+  }
+};
+
+/**
+ * Bulk upload multiple products to Firebase
+ * Used by Admin Panel for batch product import
+ */
+export const bulkUploadProducts = async (products: Product[]): Promise<void> => {
+  console.log('📦 Bulk uploading products:', products.length);
+  try {
+    const existingProducts = JSON.parse(localStorage.getItem('skipline_admin_products') || '[]');
+    const timestamp = Date.now();
+    products.forEach(product => {
+      const existingIndex = existingProducts.findIndex((p: Product) => p.id === product.id);
+      if (existingIndex >= 0) {
+        existingProducts[existingIndex] = { ...product, updatedAt: timestamp };
+      } else {
+        existingProducts.push({ ...product, createdAt: timestamp });
+      }
+    });
+    localStorage.setItem('skipline_admin_products', JSON.stringify(existingProducts));
+    console.log('✅ Bulk upload complete:', products.length, 'products');
+    // Notify other components that products have changed
+    notifyProductsUpdated();
+  } catch (error) {
+    console.error('Error bulk uploading:', error);
+    throw new Error('Failed to upload products');
+  }
+};
+
+/**
+ * Get product statistics for admin dashboard
+ */
+export const getProductStats = async (): Promise<{
+  total: number;
+  categories: Record<string, number>;
+  avgPrice: number;
+}> => {
+  const products = await getAllProducts();
+  
+  const categories: Record<string, number> = {};
+  let totalPrice = 0;
+  
+  products.forEach(product => {
+    categories[product.category] = (categories[product.category] || 0) + 1;
+    totalPrice += product.price;
+  });
+  
+  return {
+    total: products.length,
+    categories,
+    avgPrice: products.length > 0 ? totalPrice / products.length : 0
+  };
 };
 
 // ==================== USER OPERATIONS ====================

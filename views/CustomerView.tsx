@@ -33,7 +33,9 @@ import {
   saveTransactionToFirebase,
   subscribeToTransactionNotification,
   subscribeToTransactionStatus,
-  getTransaction
+  getTransaction,
+  getAllProducts,
+  subscribeToProductUpdates
 } from '../services/firebaseService';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
@@ -443,10 +445,59 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     type: 'success' | 'flagged';
   }>({ show: false, message: '', type: 'success' });
 
+  // Products state - loaded from firebaseService (includes admin products)
+  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [productsLoading, setProductsLoading] = useState(true);
+
   // Force refresh for pending orders list
   const [forceRefresh, setForceRefresh] = useState(0);
   
   // Auto-refresh transactions every 2 seconds for real-time updates
+  useEffect(() => {
+    // Load initial products from getAllProducts (merges admin products)
+    const loadProducts = async () => {
+      try {
+        setProductsLoading(true);
+        const allProducts = await getAllProducts();
+        setProducts(allProducts);
+        console.log('📦 Products loaded:', allProducts.length);
+      } catch (error) {
+        console.error('Error loading products:', error);
+        setProducts(MOCK_PRODUCTS);
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+    loadProducts();
+
+    // Subscribe to product updates (when admin changes products - same window)
+    const unsubscribe = subscribeToProductUpdates(() => {
+      console.log('🔄 Products update notification received');
+      loadProducts();
+    });
+
+    // Also listen for localStorage changes (works across tabs/windows)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'skipline_admin_products') {
+        console.log('🔄 localStorage products changed - reloading');
+        loadProducts();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    // Periodic refresh every 3 seconds to ensure sync
+    const refreshInterval = setInterval(() => {
+      loadProducts();
+    }, 3000);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(refreshInterval);
+    };
+  }, []);
+
+  // Transaction refresh useEffect
   useEffect(() => {
     const refreshInterval = setInterval(() => {
       const allTx = getAllTransactions();
@@ -807,7 +858,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
 
   // Find product by barcode - accepts ANY barcode
   const findProduct = (barcode: string): Product => {
-    const found = MOCK_PRODUCTS.find(p => p.id === barcode);
+    const found = products.find(p => p.id === barcode);
     if (found) return found;
     
     const newProduct: Product = {
@@ -954,11 +1005,11 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     setViewState('SHOPPING');
   };
 
-  // Get unique categories
-  const categories = ['All', ...Array.from(new Set(MOCK_PRODUCTS.map(p => p.category)))];
+  // Get unique categories from dynamic products
+  const categories: string[] = ['All', ...Array.from(new Set(products.map(p => p.category))).filter((c): c is string => typeof c === 'string')];
   
-  // Filter products
-  const filteredProducts = MOCK_PRODUCTS.filter(p => {
+  // Filter products from dynamic products list
+  const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          p.category.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;

@@ -734,3 +734,298 @@ export const analyzeCartBehavior = async (
     };
   }
 };
+
+// ==================== ADMIN PRODUCT IDENTIFICATION ====================
+
+/**
+ * AI-powered product identification from text
+ * Used by Admin Panel for bulk product import
+ * Analyzes a text list and extracts product information
+ */
+export const identifyProductsFromText = async (text: string): Promise<Partial<Product>[]> => {
+  const ai = getAI();
+  
+  // Fallback parsing if AI is not available
+  if (!ai) {
+    return parseProductTextFallback(text);
+  }
+  
+  try {
+    const prompt = `
+You are a product data extraction AI for an Indian retail store.
+Analyze the following text and extract product information.
+The text may be a list of products, a receipt, or inventory data.
+
+INPUT TEXT:
+${text}
+
+TASK:
+Extract each product and return a JSON array with these fields for each product:
+- name: Product name (string, required)
+- price: Price in INR (number, required, extract from text or estimate based on typical Indian retail prices)
+- mrp: MRP/original price if discounted (number, optional)
+- category: Category (Dairy, Snacks, Beverages, Personal Care, Staples, Spices, Electronics, Fresh Produce, Instant Food, Home Care)
+- aisle: Store aisle (e.g., "Aisle 3")
+- description: Brief product description
+- tags: Array of search tags
+
+Be smart about recognizing Indian products like:
+- Amul, Mother Dairy (Dairy)
+- Maggi, Yippee, Top Ramen (Instant Food)
+- Parle-G, Britannia, Haldirams (Snacks)
+- Tata Tea, Nescafe, Real Juice (Beverages)
+- Dettol, Colgate, Head & Shoulders (Personal Care)
+- India Gate, Fortune, Aashirvaad (Staples)
+
+Return ONLY a valid JSON array. No explanations.
+`;
+
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: prompt,
+      config: {
+        temperature: 0.3,
+        maxOutputTokens: 2000
+      }
+    });
+
+    const responseText = response.text || '[]';
+    
+    // Extract JSON from response
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const products = JSON.parse(jsonMatch[0]);
+      return products.map((p: any, index: number) => ({
+        id: `BULK${Date.now()}${index.toString().padStart(3, '0')}`,
+        name: p.name || 'Unknown Product',
+        price: p.price || 0,
+        mrp: p.mrp,
+        category: p.category || 'General',
+        aisle: p.aisle,
+        description: p.description,
+        tags: p.tags || [],
+        icon: getProductIcon(p.category || 'General'),
+        rating: 4.0 + Math.random() * 0.8,
+        reviews: Math.floor(Math.random() * 5000) + 100
+      }));
+    }
+    
+    return parseProductTextFallback(text);
+  } catch (error) {
+    console.error('AI Product Identification Error:', error);
+    return parseProductTextFallback(text);
+  }
+};
+
+/**
+ * AI-powered product identification from image
+ * Uses Gemini vision to identify products in an image
+ */
+export const identifyProductsFromImage = async (base64Image: string): Promise<Partial<Product>[]> => {
+  const ai = getAI();
+  
+  if (!ai) {
+    console.warn('AI not available for image processing');
+    return [];
+  }
+  
+  try {
+    // Remove data URL prefix if present
+    const imageData = base64Image.includes(',') 
+      ? base64Image.split(',')[1] 
+      : base64Image;
+    
+    const prompt = `
+You are a product identification AI for an Indian retail store.
+Analyze this image and identify all visible products, receipts, or product lists.
+
+TASK:
+Extract each identifiable product and return a JSON array with these fields:
+- name: Product name (string, required)
+- price: Price in INR (number, required - extract from image or estimate)
+- category: Category (Dairy, Snacks, Beverages, Personal Care, Staples, Spices, Electronics, Fresh Produce, Instant Food, Home Care)
+- aisle: Suggested store aisle
+- description: Brief description
+- tags: Search tags array
+
+Focus on Indian products and brands. If you see a receipt, extract line items.
+If you see products on shelves, identify each visible product.
+
+Return ONLY a valid JSON array. No other text.
+`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: prompt },
+            { 
+              inlineData: { 
+                mimeType: 'image/jpeg', 
+                data: imageData 
+              } 
+            }
+          ]
+        }
+      ],
+      config: {
+        temperature: 0.3,
+        maxOutputTokens: 2000
+      }
+    });
+
+    const responseText = response.text || '[]';
+    
+    // Extract JSON array from response
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const products = JSON.parse(jsonMatch[0]);
+      return products.map((p: any, index: number) => ({
+        id: `IMG${Date.now()}${index.toString().padStart(3, '0')}`,
+        name: p.name || 'Unknown Product',
+        price: p.price || 0,
+        mrp: p.mrp,
+        category: p.category || 'General',
+        aisle: p.aisle,
+        description: p.description,
+        tags: p.tags || [],
+        icon: getProductIcon(p.category || 'General'),
+        rating: 4.0 + Math.random() * 0.8,
+        reviews: Math.floor(Math.random() * 5000) + 100
+      }));
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Image Product Identification Error:', error);
+    return [];
+  }
+};
+
+/**
+ * Fallback text parser when AI is not available
+ */
+const parseProductTextFallback = (text: string): Partial<Product>[] => {
+  const lines = text.split('\n').filter(line => line.trim());
+  const products: Partial<Product>[] = [];
+  
+  lines.forEach((line, index) => {
+    // Try to parse common formats like:
+    // "1. Product Name - ₹99"
+    // "Product Name: Rs 99"
+    // "Product Name 99"
+    
+    const priceMatch = line.match(/[₹Rs\.]*\s*(\d+(?:\.\d{2})?)/i);
+    const price = priceMatch ? parseFloat(priceMatch[1]) : 0;
+    
+    // Remove price and numbering from product name
+    let name = line
+      .replace(/^\d+[\.\)]\s*/, '')  // Remove numbering
+      .replace(/[₹Rs\.]*\s*\d+(?:\.\d{2})?/gi, '')  // Remove price
+      .replace(/[-:]/g, ' ')  // Remove separators
+      .trim();
+    
+    if (name.length > 2) {
+      const category = guessProductCategory(name);
+      products.push({
+        id: `PARSE${Date.now()}${index.toString().padStart(3, '0')}`,
+        name,
+        price: price || estimatePrice(name, category),
+        category,
+        aisle: getCategoryAisle(category),
+        icon: getProductIcon(category),
+        tags: name.toLowerCase().split(/\s+/).filter(t => t.length > 2),
+        rating: 4.0 + Math.random() * 0.8,
+        reviews: Math.floor(Math.random() * 3000) + 50
+      });
+    }
+  });
+  
+  return products;
+};
+
+/**
+ * Guess product category from name
+ */
+const guessProductCategory = (name: string): string => {
+  const nameLower = name.toLowerCase();
+  
+  if (/milk|butter|curd|dahi|cheese|paneer|ghee|cream|amul|mother dairy/i.test(nameLower)) return 'Dairy';
+  if (/chips|biscuit|cookie|namkeen|bhujia|parle|britannia|lays|kurkure|haldiram/i.test(nameLower)) return 'Snacks';
+  if (/tea|coffee|juice|cola|pepsi|coke|sprite|water|drink|real|tropicana|nescafe|tata tea/i.test(nameLower)) return 'Beverages';
+  if (/soap|shampoo|toothpaste|cream|lotion|dettol|colgate|dove|head.?shoulder/i.test(nameLower)) return 'Personal Care';
+  if (/rice|atta|dal|oil|sugar|flour|wheat|india gate|fortune|aashirvaad/i.test(nameLower)) return 'Staples';
+  if (/masala|spice|turmeric|chilli|salt|mdh|everest|catch/i.test(nameLower)) return 'Spices';
+  if (/phone|charger|cable|headphone|speaker|earphone|boat|mi|samsung/i.test(nameLower)) return 'Electronics';
+  if (/tomato|onion|potato|apple|banana|vegetable|fruit|fresh/i.test(nameLower)) return 'Fresh Produce';
+  if (/maggi|noodle|pasta|instant|yippee|top ramen/i.test(nameLower)) return 'Instant Food';
+  if (/detergent|cleaner|mop|broom|vim|surf|harpic/i.test(nameLower)) return 'Home Care';
+  
+  return 'General';
+};
+
+/**
+ * Get aisle for category
+ */
+const getCategoryAisle = (category: string): string => {
+  const aisleMap: Record<string, string> = {
+    'Dairy': 'Aisle 3',
+    'Snacks': 'Aisle 5',
+    'Beverages': 'Aisle 7',
+    'Personal Care': 'Aisle 9',
+    'Staples': 'Aisle 11',
+    'Spices': 'Aisle 12',
+    'Electronics': 'Aisle 15',
+    'Fresh Produce': 'Aisle 1',
+    'Instant Food': 'Aisle 6',
+    'Home Care': 'Aisle 10',
+    'General': 'Aisle 8'
+  };
+  return aisleMap[category] || 'Aisle 1';
+};
+
+/**
+ * Get product icon emoji based on category
+ */
+const getProductIcon = (category: string): string => {
+  const iconMap: Record<string, string> = {
+    'Dairy': '🥛',
+    'Snacks': '🍪',
+    'Beverages': '🥤',
+    'Personal Care': '🧴',
+    'Staples': '🍚',
+    'Spices': '🌶️',
+    'Electronics': '🔌',
+    'Fresh Produce': '🥬',
+    'Instant Food': '🍜',
+    'Home Care': '🧹',
+    'General': '📦'
+  };
+  return iconMap[category] || '📦';
+};
+
+/**
+ * Estimate price based on product name and category
+ */
+const estimatePrice = (name: string, category: string): number => {
+  const basePrices: Record<string, number> = {
+    'Dairy': 50,
+    'Snacks': 30,
+    'Beverages': 40,
+    'Personal Care': 100,
+    'Staples': 80,
+    'Spices': 60,
+    'Electronics': 500,
+    'Fresh Produce': 40,
+    'Instant Food': 25,
+    'Home Care': 75,
+    'General': 50
+  };
+  
+  const basePrice = basePrices[category] || 50;
+  // Add some variance based on name length (longer names often mean larger/premium products)
+  const variance = (name.length / 10) * 20;
+  return Math.round(basePrice + variance + Math.random() * 30);
+};

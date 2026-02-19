@@ -12,17 +12,18 @@ import React, { useState } from 'react';
 import { 
   Store, ShoppingCart, ShieldCheck, Loader2, UserCircle, LogOut,
   CreditCard, QrCode, CheckCircle, ArrowRight, ArrowLeft, Sparkles,
-  Smartphone, Wifi, Camera, DoorOpen
+  Smartphone, Wifi, Camera, DoorOpen, Settings
 } from 'lucide-react';
 import { CustomerView } from './views/CustomerView';
 import { StaffView } from './views/StaffView';
+import { AdminView } from './views/AdminView';
 import { signInWithGoogle } from './config/firebase';
 import { saveGuestUser } from './services/firebaseService';
 import { AnimatedLogo } from './components/AnimatedLogo';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { LanguageSelector } from './components/LanguageSelector';
 
-type AppMode = 'LANDING' | 'GUIDE' | 'CUSTOMER' | 'STAFF';
+type AppMode = 'LANDING' | 'GUIDE' | 'CUSTOMER' | 'STAFF' | 'ADMIN';
 
 // Icons for user guide steps
 const guideStepIcons = [
@@ -374,6 +375,20 @@ const AppContent: React.FC = () => {
                 <p className="text-slate-400 text-sm">{t.modeSelect.staffModeDesc}</p>
               </div>
             </button>
+
+            {/* Admin Mode */}
+            <button
+              onClick={() => setMode('ADMIN')}
+              className="w-full bg-gradient-to-r from-purple-900 to-indigo-900 p-6 rounded-2xl shadow-lg border-2 border-transparent hover:border-purple-500 transition-all text-left flex items-center gap-4 group"
+            >
+              <div className="w-16 h-16 bg-purple-800/50 rounded-2xl flex items-center justify-center group-hover:bg-purple-600 transition-colors">
+                <Settings className="w-8 h-8 text-purple-400 group-hover:text-white transition-colors" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-xl font-bold text-white">Admin Panel</h2>
+                <p className="text-purple-300 text-sm">Manage products, settings & modes</p>
+              </div>
+            </button>
           </div>
 
           {/* Sign Out */}
@@ -406,6 +421,15 @@ const AppContent: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-900">
         <StaffView onExit={() => setMode('LANDING')} />
+      </div>
+    );
+  }
+
+  // ADMIN MODE - Full admin panel for managing products and settings
+  if (mode === 'ADMIN') {
+    return (
+      <div className="min-h-screen bg-slate-900">
+        <AdminView onExit={() => setMode('LANDING')} />
       </div>
     );
   }
