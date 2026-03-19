@@ -72,6 +72,12 @@ const PRODUCT_ICONS = [
 ];
 
 export const AdminView: React.FC<AdminViewProps> = ({ onExit }) => {
+  // Password Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const ADMIN_PASSWORD = '2531'; // Admin password
+  
   const [activeTab, setActiveTab] = useState<AdminTab>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -104,6 +110,19 @@ export const AdminView: React.FC<AdminViewProps> = ({ onExit }) => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle password submission
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      setPasswordError('');
+      loadProducts();
+    } else {
+      setPasswordError('Incorrect password. Try again.');
+      setPasswordInput('');
+    }
+  };
 
   // Load products on mount
   useEffect(() => {
@@ -1426,6 +1445,77 @@ export const AdminView: React.FC<AdminViewProps> = ({ onExit }) => {
   );
 
   return (
+    <>
+      {/* Password Protection Screen */}
+      {!isAuthenticated ? (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            {/* Password Card */}
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-2xl p-8 shadow-2xl">
+              {/* Logo/Title */}
+              <div className="flex flex-col items-center gap-4 mb-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                  <ShieldCheck className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-center">
+                  <h1 className="text-2xl font-black text-white mb-2">Admin Panel</h1>
+                  <p className="text-slate-400 text-sm">Enter password to access</p>
+                </div>
+              </div>
+
+              {/* Password Form */}
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                {/* Password Input */}
+                <div>
+                  <label className="block text-slate-300 text-sm font-semibold mb-2">Password</label>
+                  <input
+                    type="password"
+                    placeholder="Enter admin password"
+                    value={passwordInput}
+                    onChange={(e) => {
+                      setPasswordInput(e.target.value);
+                      setPasswordError('');
+                    }}
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Error Message */}
+                {passwordError && (
+                  <div className="flex gap-2 items-center p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <span className="text-red-400 text-sm font-medium">{passwordError}</span>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
+                >
+                  Unlock Admin
+                </button>
+              </form>
+
+              {/* Back Button */}
+              <button
+                onClick={onExit}
+                className="w-full mt-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-400 hover:text-white font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+
+              {/* Security Info */}
+              <div className="mt-6 pt-6 border-t border-slate-700">
+                <p className="text-slate-500 text-xs text-center leading-relaxed">
+                  🔐 This admin panel is protected. Only authorized personnel should access.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
       <div className="bg-slate-800/50 border-b border-slate-700 sticky top-0 z-40">
@@ -1531,6 +1621,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ onExit }) => {
         </div>
       )}
     </div>
+      )}
+    </>
   );
 };
 
