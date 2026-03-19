@@ -122,15 +122,15 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
         console.log('⚠️ BarcodeDetector API not available - using manual entry');
       }
 
-      // Start camera with HIGH FPS settings for stable scanning
+      // Start camera with ULTRA-HIGH FPS settings for smooth, responsive scanning
       try {
         const constraints: MediaStreamConstraints = { 
           video: { 
             facingMode: facingMode,
             width: { ideal: 1920, min: 1280 }, 
             height: { ideal: 1080, min: 720 },
-            // HIGH FPS for smoother, more stable scanning
-            frameRate: { ideal: 60, min: 30 },
+            // ULTRA-HIGH FPS for ultra-smooth scanning: request 120fps, fallback to 60fps
+            frameRate: { ideal: 120, min: 60 },
           } as MediaTrackConstraints
         };
         
@@ -158,6 +158,9 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
         
         if (videoRef.current && mounted) {
           videoRef.current.srcObject = stream;
+          // Enable rendering optimization
+          videoRef.current.style.backfaceVisibility = 'hidden';
+          videoRef.current.style.webkitBackfaceVisibility = 'hidden';
           await videoRef.current.play();
           setHasCamera(true);
           setError(null);
@@ -192,14 +195,14 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
       }
     }
 
-    // High-performance detection loop - runs at 60fps for smooth scanning
+    // Ultra-high-performance detection loop - runs at 120fps for ultra-smooth scanning
     let lastDetectTime = 0;
-    const DETECT_INTERVAL = 16; // ~60fps detection rate
+    const DETECT_INTERVAL = 8; // ~120fps detection rate (reduced from 16ms for ultra-smooth scanning)
     
     async function detectLoop(timestamp: number) {
       if (!detector || !videoRef.current || !scanning || !mounted || disabled) return;
       
-      // Throttle detection to maintain consistent FPS
+      // Throttle detection to maintain consistent FPS without dropping frames
       if (timestamp - lastDetectTime < DETECT_INTERVAL) {
         frameId = requestAnimationFrame(detectLoop);
         return;

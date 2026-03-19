@@ -50,6 +50,7 @@ const generateExitToken = async (transaction: Transaction): Promise<string> => {
 
 /**
  * Verify JWT token (used by staff scanner)
+ * FIXED: Added clock tolerance to handle device time skew
  */
 export const verifyExitToken = async (token: string): Promise<{
   valid: boolean;
@@ -71,9 +72,20 @@ export const verifyExitToken = async (token: string): Promise<{
 
   try {
     console.log('verifyExitToken: Attempting to verify JWT...');
-    const { payload } = await jose.jwtVerify(token, JWT_SECRET);
-    console.log('verifyExitToken: SUCCESS, payload:', payload);
-    return { valid: true, payload };
+    
+    // Decode without verification first to log expiry time for debugging
+    const headerAndPayload = token.split('.')[0] + '.' + token.split('.')[1];
+    const decodedPayload = atob(token.split('.')[1]);
+    const payload = JSON.parse(decodedPayload);
+    console.log('JWT Payload:', payload);
+    console.log('JWT exp:', payload.exp, 'Current time:', Math.floor(Date.now() / 1000));
+    
+    // Verify JWT with 90 second clock tolerance to handle device time skew
+    const { payload: verifiedPayload } = await jose.jwtVerify(token, JWT_SECRET, {
+      clockTolerance: 90 // 90 seconds tolerance for device time differences
+    });
+    console.log('verifyExitToken: SUCCESS, payload:', verifiedPayload);
+    return { valid: true, payload: verifiedPayload };
   } catch (error: any) {
     console.log('verifyExitToken: Error:', error.code, error.message);
     if (error.code === 'ERR_JWT_EXPIRED') {
