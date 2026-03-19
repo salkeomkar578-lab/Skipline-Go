@@ -122,15 +122,16 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
         console.log('⚠️ BarcodeDetector API not available - using manual entry');
       }
 
-      // Start camera with ULTRA-HIGH FPS settings for smooth, responsive scanning
+      // Start camera with HIGH FPS settings optimized for mobile & desktop
       try {
+        // Mobile-friendly constraints: request 60fps but accept anything from 30fps
         const constraints: MediaStreamConstraints = { 
           video: { 
             facingMode: facingMode,
-            width: { ideal: 1920, min: 1280 }, 
-            height: { ideal: 1080, min: 720 },
-            // ULTRA-HIGH FPS for ultra-smooth scanning: request 120fps, fallback to 60fps
-            frameRate: { ideal: 120, min: 60 },
+            width: { ideal: 1920, min: 640 }, 
+            height: { ideal: 1080, min: 480 },
+            // Request 60fps but accept 30fps minimum for better mobile compatibility
+            frameRate: { ideal: 60, min: 30 },
           } as MediaTrackConstraints
         };
         
@@ -195,9 +196,9 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
       }
     }
 
-    // Ultra-high-performance detection loop - runs at 120fps for ultra-smooth scanning
+    // High-performance detection loop - optimized for 60fps scanning on mobile & desktop
     let lastDetectTime = 0;
-    const DETECT_INTERVAL = 8; // ~120fps detection rate (reduced from 16ms for ultra-smooth scanning)
+    const DETECT_INTERVAL = 16; // ~60fps detection rate (compatible with most phones)
     
     async function detectLoop(timestamp: number) {
       if (!detector || !videoRef.current || !scanning || !mounted || disabled) return;
